@@ -3,6 +3,7 @@
 #include <ios>
 #include <string>
 #include <vector>
+#include "path.h"
 
 typedef std::vector< std::string > StringList;
 
@@ -10,11 +11,15 @@ class Config
 {
 	public:
 
-		Config( std::istream &stream );
+		Config();
 
-		std::string baseDirectory() const;
-		std::string buildDirectory() const;
-		std::string sourceDirectory() const;
+		static Config readConfigFile( const filesystem::path &path );
+
+		static void writeDefault(std::ostream &stream );
+
+		filesystem::path baseDirectory() const;
+		filesystem::path buildDirectory() const;
+		filesystem::path sourceDirectory() const;
 
 		std::string compilerCommand() const;
 		StringList cxxFlags() const;
@@ -32,9 +37,9 @@ class Config
 		std::string baseDirectory_,
 			buildDirectory_,
 			sourceDirectory_,
-			compilerCommand_,
 			header_,
-			footer_;
+			footer_,
+			compilerCommand_;
 
 		StringList cxxFlags_,
 			includeDirectories_,

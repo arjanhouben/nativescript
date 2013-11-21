@@ -4,10 +4,25 @@
 #include <iostream>
 #include <unistd.h>
 
-#include "utilities.h"
+//#include "utilities.h"
+#include "filesystem.h"
+#include "generic.h"
 #include "config.h"
+#include "path.h"
 
 using namespace std;
+using namespace filesystem;
+
+static const string defaultHeader( "#include <iostream>\n"
+					  "#include <fstream>\n"
+					  "#include <vector>\n"
+					  "#include <map>\n"
+					  "#include <cctype>\n"
+					  "#include <algorithm>\n"
+					  "using namespace std;\n"
+					  "int main( int argc, const char *argv_c_str[] ) {\n"
+					  "\tstd::map< int, var > args;\n"
+					  "\tfor ( int i = 0; i < argc; ++i ) argv[ i ] = argv_c_str[ i ];\n" );
 
 int main( int argc, char *argv[] )
 {
@@ -17,21 +32,29 @@ int main( int argc, char *argv[] )
 	{
 		const char *script = argv[ 1 ];
 
-		const string scriptDir = fullpath( script );
+		const path scriptDir = path( script ).dirname();
 
 		const char *homeDir = getenv( "HOME" );
 		if ( !homeDir ) throw logic_error( "environment variable 'HOME' not set!" );
 
-		const string configPath = string( homeDir ) + "/.runcpp/.config";
+		const path configPath = path( homeDir ) / ".runcpp" / "config";
 		ifstream configFile( configPath.c_str() );
-		Config config( configFile );
-
-		const string exePath = normalize( config.buildDirectory() + script );
-		const string sourcePath = normalize( config.sourceDirectory() + script );
-
-		if ( !exists( exePath ) || modification_date( sourcePath ) <= modification_date( script ) )
+		if ( !configFile )
 		{
-			create_directory( normalize( config.sourceDirectory() + scriptDir ) );
+			ofstream defaultFile( configPath.c_str() );
+			Config::writeDefault( defaultFile );
+			defaultFile.close();
+			configFile.open( configPath.c_str() );
+		}
+
+		Config config( Config::readConfigFile( configPath ) );
+
+		const path exePath = config.buildDirectory() / script;
+		const path sourcePath = config.sourceDirectory() / script;
+
+		if ( !exists( exePath ) || modification_date( sourcePath ) <= modification_date( path( script ) ) )
+		{
+			create_directory( config.sourceDirectory() / scriptDir );
 
 			ofstream source( sourcePath.c_str() );
 #if 0
@@ -57,7 +80,14 @@ int main( int argc, char *argv[] )
 			}
 
 			ifstream header( config.header().c_str() );
-			source << header.rdbuf();
+			if ( header )
+			{
+				source << header.rdbuf();
+			}
+			else
+			{
+				source << defaultHeader;
+			}
 
 			while ( getline( scriptsource, line ) )
 			{
@@ -68,7 +98,7 @@ int main( int argc, char *argv[] )
 
 			source.close();
 
-			create_directory( normalize( config.buildDirectory() + scriptDir ) );
+			create_directory( config.buildDirectory() / scriptDir );
 
 			stringstream command;
 			command << config.compilerCommand() << ' '
