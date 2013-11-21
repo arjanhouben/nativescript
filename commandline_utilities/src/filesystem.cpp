@@ -28,11 +28,8 @@ namespace filesystem
 		return std::ifstream( path.c_str() ) ? true : false;
 	}
 
-	void create_directory( const filesystem::path &path )
+	void make_directory( const filesystem::path &path )
 	{
-		filesystem::path begin = path.begin();
-		filesystem::path start = begin;
-
 		for ( auto i : path )
 		{
 			if ( mkdir( i.c_str(), S_IRWXU ) && errno != EEXIST )
@@ -45,14 +42,14 @@ namespace filesystem
 	filesystem::path cwd()
 	{
 		char buf[ PATH_MAX ];
-		getcwd( buf, 1024 );
+		getcwd( buf, sizeof( buf ) );
 		return filesystem::path( buf );
 	}
 
-	bool is_absolute( const path &path )
+	bool is_absolute( const path &p )
 	{
-		if ( path.empty() ) return false;
-		return path[ 0 ][ 0 ] == '/';
+		if ( p.empty() ) return false;
+		return p.string()[ 0 ] == '/';
 	}
 
 	path absolute( const path &p, const path &prefix )

@@ -13,8 +13,6 @@ add_subdirectory( commandline_utilities )
 
 add_executable( nativescript
     src/nativescript.cpp
-    src/utilities.cpp
-    include/utilities.h
     src/config.cpp
     include/config.h
 )

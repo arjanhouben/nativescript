@@ -22,7 +22,7 @@ namespace filesystem
 	 * @brief create_directory tries to create the directory, throws if unsuccesful
 	 * @param path directory to be created
 	 */
-	void create_directory( const path &path );
+	void make_directory( const path &path );
 
 	/**
 	 * @brief exists check if file exists
@@ -31,7 +31,7 @@ namespace filesystem
 	 */
 	bool exists( const path &path );
 
-	bool is_absolute( const filesystem::path &path );
+	bool is_absolute(const filesystem::path &p );
 
 	path absolute( const path &p, const path &prefix );
 

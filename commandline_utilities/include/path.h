@@ -31,15 +31,13 @@ namespace filesystem
 
 			bool operator == ( char str ) const;
 
-			const std::string& operator[]( size_t ) const;
-
 			path& operator /= ( const path& );
 
 			path operator / ( const path& ) const;
 
 			path operator / ( const char *str ) const;
 
-			path operator++() const;
+			path& operator++();
 
 			path operator*() const;
 
@@ -49,15 +47,14 @@ namespace filesystem
 
 			path dirname() const;
 
-			const std::string& string() const;
+			std::string string() const;
 
 		private:
 
 			path( const stringlist &paths, size_t pos );
 
+			std::string path_;
 			size_t position_;
-			stringlist paths_;
-			mutable std::string path_;
 	};
 
 	typedef std::vector< path > pathlist;

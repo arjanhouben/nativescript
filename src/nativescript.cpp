@@ -21,57 +21,33 @@ static const string defaultHeader( "#include <iostream>\n"
 					  "#include <algorithm>\n"
 					  "using namespace std;\n"
 					  "int main( int argc, const char *argv_c_str[] ) {\n"
-					  "\tstd::map< int, var > args;\n"
+					  "\tstd::map< int, string > argv;\n"
 					  "\tfor ( int i = 0; i < argc; ++i ) argv[ i ] = argv_c_str[ i ];\n" );
 
 int main( int argc, char *argv[] )
 {
-	if ( argc < 2 ) return 0;
-
 	try
 	{
-		const char *script = argv[ 1 ];
+		if ( argc < 2 ) return 0;
 
-		const path scriptDir = path( script ).dirname();
+		const path script( absolute( path( argv[ 1 ] ), cwd() ) );
 
 		const char *homeDir = getenv( "HOME" );
 		if ( !homeDir ) throw logic_error( "environment variable 'HOME' not set!" );
 
-		const path configPath = path( homeDir ) / ".runcpp" / "config";
-		ifstream configFile( configPath.c_str() );
-		if ( !configFile )
-		{
-			ofstream defaultFile( configPath.c_str() );
-			Config::writeDefault( defaultFile );
-			defaultFile.close();
-			configFile.open( configPath.c_str() );
-		}
-
-		Config config( Config::readConfigFile( configPath ) );
+		Config config( Config::readConfigFile( path( homeDir ) / ".runcpp" / "config" ) );
 
 		const path exePath = config.buildDirectory() / script;
 		const path sourcePath = config.sourceDirectory() / script;
 
 		if ( !exists( exePath ) || modification_date( sourcePath ) <= modification_date( path( script ) ) )
 		{
-			create_directory( config.sourceDirectory() / scriptDir );
+			const path scriptDir = path( script ).dirname();
+			make_directory( config.sourceDirectory() / scriptDir );
 
 			ofstream source( sourcePath.c_str() );
-#if 0
-			source << "#include <iostream>" << endl
-				   << "#include <fstream>" << endl
-				   << "#include <vector>" << endl
-				   << "#include <map>" << endl
-				   << "#include <cctype>" << endl
-				   << "#include <algorithm>" << endl
-				   << "using namespace std;" << endl
-				   << "#include \"/Users/arjan/C++/runcpp/include/utils.h\"" << endl
-				   << "int main( int argc, const char *argv[] ) {" << endl
-				   << "std::map< int, var > args;" << endl
-				   << "for ( int i = 0; i < argc; ++i ) args[ i ] = argv[ i ];" << endl;
-#endif
 
-			ifstream scriptsource( script );
+			ifstream scriptsource( script.c_str() );
 			string line;
 			getline( scriptsource, line );
 			if ( line.substr( 0, 2 ) != "#!" )
@@ -98,7 +74,7 @@ int main( int argc, char *argv[] )
 
 			source.close();
 
-			create_directory( config.buildDirectory() / scriptDir );
+			make_directory( config.buildDirectory() / scriptDir );
 
 			stringstream command;
 			command << config.compilerCommand() << ' '
@@ -120,7 +96,7 @@ int main( int argc, char *argv[] )
 //			debugger = "lldb ";
 //		}
 
-		execv( config.compilerCommand().c_str(), argv + 1 );
+		execv( exePath.c_str(), argv + 1 );
 	}
 	catch ( const exception &err )
 	{

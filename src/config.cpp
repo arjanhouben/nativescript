@@ -98,6 +98,7 @@ Config Config::readConfigFile( const filesystem::path &configPath )
 		if ( !exists( configPath / ".sample" ) )
 		{
 			ofstream defaultFile( ( configPath / ".sample" ).c_str() );
+			filesystem::make_directory( configPath.dirname() );
 			writeDefault( defaultFile );
 			return config;
 		}
