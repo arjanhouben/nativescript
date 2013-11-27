@@ -1,9 +1,10 @@
 #pragma once
 
+#include <filesystem/path.h>
+#include <filesystem/directory.h>
+
 namespace filesystem
 {
-	class path;
-
 	/**
 	 * @brief is_executable checks if @filename is marked as executable
 	 * @param filename path to file
@@ -36,8 +37,4 @@ namespace filesystem
 	path absolute( const path &p, const path &prefix );
 
 	path cwd();
-
-	path fullpath( path str );
-
-	path normalize( const path &path );
 }

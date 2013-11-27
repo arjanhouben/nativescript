@@ -37,9 +37,11 @@ namespace filesystem
 
 			path operator / ( const char *str ) const;
 
+			path& operator += ( const std::string &str );
+
 			path& operator++();
 
-			path operator*() const;
+			std::string operator*() const;
 
 			bool empty() const;
 
@@ -57,7 +59,7 @@ namespace filesystem
 			size_t position_;
 	};
 
-	typedef std::vector< path > pathlist;
+	path operator + ( const path &p, const std::string &str );
 
-	std::ostream& operator << ( std::ostream &stream, const filesystem::path &path );
+	std::ostream& operator << ( std::ostream &stream, const path &p );
 }

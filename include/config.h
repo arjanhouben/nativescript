@@ -3,9 +3,7 @@
 #include <ios>
 #include <string>
 #include <vector>
-#include "path.h"
-
-typedef std::vector< std::string > StringList;
+#include <filesystem.h>
 
 class Config
 {
@@ -22,10 +20,10 @@ class Config
 		filesystem::path sourceDirectory() const;
 
 		std::string compilerCommand() const;
-		StringList cxxFlags() const;
-		StringList includeDirectories() const;
-		StringList linkDirectories() const;
-		StringList libraries() const;
+		std::string cxxFlags() const;
+		std::string includeDirectories() const;
+		std::string linkDirectories() const;
+		std::string libraries() const;
 
 		std::string header() const;
 		std::string footer() const;
@@ -39,9 +37,8 @@ class Config
 			sourceDirectory_,
 			header_,
 			footer_,
-			compilerCommand_;
-
-		StringList cxxFlags_,
+			compilerCommand_,
+			cxxFlags_,
 			includeDirectories_,
 			linkDirectories_,
 			libraries_;

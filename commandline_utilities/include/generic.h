@@ -5,28 +5,23 @@
 
 typedef std::vector< std::string > stringlist;
 
-template < class T >
-std::string join( const T &t, const std::string &seperator = std::string(), const std::string &prefix = std::string(), const std::string &postix = std::string() )
-{
-	std::string result;
-	for ( auto s : t )
-	{
-		if ( !result.empty() ) result.append( seperator );
-		result += prefix + s + postix;
-	}
-	return result;
-}
-
-template < class T >
-std::string join( T start, T end, const std::string &seperator = std::string(), const std::string &prefix = std::string(), const std::string &postix = std::string() )
+template < typename InputIterator, typename Seperator = std::string, typename Prefix = std::string, typename Postfix = std::string >
+std::string join( InputIterator start, InputIterator end, Seperator seperator = Seperator(), Prefix prefix = Prefix(), Postfix postix = Postfix() )
 {
 	std::string result;
 	while ( start != end )
 	{
-		if ( !result.empty() ) result.append( seperator );
+		if ( !result.empty() ) result += seperator;
 		result += prefix + *start + postix;
+		++start;
 	}
 	return result;
+}
+
+template < typename Input, typename Seperator = std::string, typename Prefix = std::string, typename Postfix = std::string >
+std::string join( Input input, Seperator seperator = Seperator(), Prefix prefix = Prefix(), Postfix postix = Postfix() )
+{
+	return join( input.begin(), input.end(), seperator, prefix, postix );
 }
 
 template < class T >

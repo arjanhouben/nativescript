@@ -1,6 +1,6 @@
-#include "config.h"
-#include "path.h"
-#include "filesystem.h"
+#include <config.h>
+#include <filesystem.h>
+#include <generic.h>
 
 #include <string>
 #include <iostream>
@@ -9,17 +9,18 @@
 #include <fstream>
 
 using namespace std;
+using namespace filesystem;
 
 typedef map< string, string > Values;
 
-filesystem::path defaultBaseDir()
+path defaultBaseDir()
 {
 	const char *homeDir = getenv( "HOME" );
 	if ( !homeDir )
 	{
 		throw logic_error( "no 'HOME' directory found in environment!" );
 	}
-	return filesystem::path( homeDir ) / ".runcpp/";
+	return path( homeDir ) / ".nativescript/";
 }
 
 Values parseConfig( std::istream &stream )
@@ -37,10 +38,10 @@ Values parseConfig( std::istream &stream )
 		stringstream line( tmp );
 
 		char singleChar;
-		string key, value;
-		if ( ( line >> key >> singleChar >> value ) && singleChar == '=' )
+		string key;
+		if ( ( line >> key >> singleChar ) && singleChar == '=' )
 		{
-			values[ key ] = value;
+			values[ key ] = tmp.substr( line.tellg() );
 		}
 		else if ( !key.empty() && key[ 0 ] != '#' )
 		{
@@ -81,51 +82,56 @@ Config::Config() :
 	header_( "header.cpp" ),
 	footer_( "footer.cpp" ),
 	compilerCommand_( "clang++" ),
-	cxxFlags_( { "-g", "-x", "c++", "-O3", "-Wall", "-Wfatal-errors", "-std=c++11", "-stdlib=libc++" } ),
-	includeDirectories_(),
+	cxxFlags_( "-g -x c++ -O3 -Wall -Wfatal-errors -std=c++11 -stdlib=libc++" ),
+	includeDirectories_( "-I" + baseDirectory_ + "/include" ),
 	linkDirectories_(),
 	libraries_()
 {
 }
 
-Config Config::readConfigFile( const filesystem::path &configPath )
+Config Config::readConfigFile( const path &configPath )
 {
 	Config config;
 
 	ifstream configFile( configPath.c_str() );
 	if ( !configFile )
 	{
-		if ( !exists( configPath / ".sample" ) )
+		const path sample( configPath + ".sample" );
+		if ( !exists( sample ) )
 		{
-			ofstream defaultFile( ( configPath / ".sample" ).c_str() );
-			filesystem::make_directory( configPath.dirname() );
+			make_directory( sample.dirname() );
+			ofstream defaultFile( sample.c_str() );
 			writeDefault( defaultFile );
-			return config;
 		}
 	}
-
-	try
+	else
 	{
-		Values values( parseConfig( configFile ) );
-
-		map< string, SaveValue > saveValues;
-		saveValues[ "base_directory" ] = &config.baseDirectory_;
-		saveValues[ "build_directory" ] = &config.buildDirectory_;
-		saveValues[ "source_directory" ] = &config.sourceDirectory_;
-
-		for ( auto value : values )
+		try
 		{
-			if ( !saveValues[ value.first ].set( value.second ) )
+			Values values( parseConfig( configFile ) );
+
+			map< string, SaveValue > saveValues;
+			saveValues[ "base_directory" ] = &config.baseDirectory_;
+			saveValues[ "build_directory" ] = &config.buildDirectory_;
+			saveValues[ "source_directory" ] = &config.sourceDirectory_;
+			saveValues[ "compiler" ] = &config.compilerCommand_;
+			saveValues[ "cxx_flags" ] = &config.cxxFlags_;
+			saveValues[ "include_directories" ] = &config.includeDirectories_;
+			saveValues[ "link_directories" ] = &config.linkDirectories_;
+			saveValues[ "libraries" ] = &config.libraries_;
+
+			for ( auto value : values )
 			{
-				throw logic_error( "\"" + value.first + "\" is not a known configuration setting" );
+				if ( !saveValues[ value.first ].set( value.second ) )
+				{
+					throw logic_error( "\"" + value.first + "\" is not a known configuration setting" );
+				}
 			}
 		}
-
-		config.includeDirectories_.push_back( config.baseDirectory().string() );
-	}
-	catch ( const exception &err )
-	{
-		throw logic_error( "error while trying to parse \"" + configPath.string() + "\"\n\"" + err.what() );
+		catch ( const exception &err )
+		{
+			throw logic_error( "error while trying to parse \"" + configPath.string() + "\"\n\"" + err.what() );
+		}
 	}
 
 	return config;
@@ -136,22 +142,28 @@ void Config::writeDefault( ostream &stream )
 	Config config;
 	stream << "# these are the default values, you can change them to your preference" << endl
 		   << "# if this file is missing, it will be auto-generated" << endl
-		   << "base_directory = " << config.baseDirectory() << endl
-		   << "build_directory = " << config.buildDirectory_ << endl
-		   << "source_directory = " << config.sourceDirectory_ << endl;
+		   << "# this file needs to be renamed from 'config.sample' to 'config' for it to be effective" << endl << endl
+		   << "base_directory = " << config.baseDirectory() << endl << endl
+		   << "build_directory = " << config.buildDirectory_ << endl << endl
+		   << "source_directory = " << config.sourceDirectory_ << endl << endl
+		   << "compiler = " << config.compilerCommand_ << endl << endl
+		   << "cxx_flags = " << config.cxxFlags_ << endl << endl
+		   << "include_directories = " << config.includeDirectories_ << endl << endl
+		   << "link_directories = " << config.linkDirectories_ << endl << endl
+		   << "libraries = " << config.libraries_ << endl;
 }
 
-filesystem::path Config::baseDirectory() const
+path Config::baseDirectory() const
 {
 	return baseDirectory_;
 }
 
-filesystem::path Config::buildDirectory() const
+path Config::buildDirectory() const
 {
 	return absolute( buildDirectory_, baseDirectory() );
 }
 
-filesystem::path Config::sourceDirectory() const
+path Config::sourceDirectory() const
 {
 	return absolute( sourceDirectory_, baseDirectory() );
 }
@@ -161,22 +173,22 @@ string Config::compilerCommand() const
 	return compilerCommand_;
 }
 
-StringList Config::cxxFlags() const
+string Config::cxxFlags() const
 {
 	return cxxFlags_;
 }
 
-StringList Config::includeDirectories() const
+string Config::includeDirectories() const
 {
 	return includeDirectories_;
 }
 
-StringList Config::linkDirectories() const
+string Config::linkDirectories() const
 {
 	return linkDirectories_;
 }
 
-StringList Config::libraries() const
+string Config::libraries() const
 {
 	return libraries_;
 }

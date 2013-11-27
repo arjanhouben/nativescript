@@ -1,9 +1,10 @@
-#include "path.h"
+#include <filesystem/path.h>
 #include "generic.h"
 
 #include <string>
 
 using namespace std;
+using namespace filesystem;
 
 const string slash( "/" ), dot( "." );
 
@@ -49,18 +50,18 @@ string cleanup( string list )
 	return list;
 }
 
-filesystem::path::path( const std::string &path ) :
+path::path( const std::string &path ) :
 	path_( cleanup( path ) ),
 	position_( path_.size() )
 {
 }
 
-const char *filesystem::path::c_str() const
+const char *path::c_str() const
 {
 	return string().c_str();
 }
 
-filesystem::path filesystem::path::begin() const
+path path::begin() const
 {
 	path p( *this );
 	p.position_ = p.path_.find( '/', 1 );
@@ -68,62 +69,69 @@ filesystem::path filesystem::path::begin() const
 	return p;
 }
 
-filesystem::path filesystem::path::end() const
+path path::end() const
 {
 	path p( *this );
 	p.position_ = string::npos;
 	return p;
 }
 
-bool filesystem::path::operator != ( const filesystem::path &path ) const
+bool path::operator != ( const path &path ) const
 {
 	return !( *this == path );
 }
 
-bool filesystem::path::operator !=( const char *str ) const
+bool path::operator !=( const char *str ) const
 {
 	return !( *this == str );
 }
 
-bool filesystem::path::operator != ( char c ) const
+bool path::operator != ( char c ) const
 {
 	return !( *this == c );
 }
 
-bool filesystem::path::operator == ( const filesystem::path &path ) const
+bool path::operator == ( const path &path ) const
 {
 	return position_ == path.position_ && path_ == path.path_;
 }
 
-bool filesystem::path::operator ==( const char *str ) const
+bool path::operator ==( const char *str ) const
 {
 	return path_ == str;
 }
 
-bool filesystem::path::operator == ( char c ) const
+bool path::operator == ( char c ) const
 {
 	return path_.size() == 1 && path_[ 0 ] == c;
 }
 
-filesystem::path& filesystem::path::operator /= ( const filesystem::path &p )
+path& path::operator /= ( const path &p )
 {
 	path_ = cleanup( path_ + '/' +  p.string() );
 	position_ = path_.size();
 	return *this;
 }
 
-filesystem::path filesystem::path::operator / ( const filesystem::path &p ) const
+path path::operator / ( const path &p ) const
 {
 	path result( *this );
 	return result /= p;
 }
 
-filesystem::path filesystem::path::operator / ( const char *str ) const
+path path::operator / ( const char *str ) const
 {
 	return *this / path( str );
 }
 
-filesystem::path& filesystem::path::operator++()
+path& path::operator += ( const std::string &str )
+{
+	path_.append( str );
+	position_ = path_.size();
+	return *this;
+}
+
+path& path::operator++()
 {
 	if ( position_ == path_.size() )
 	{
@@ -138,30 +146,35 @@ filesystem::path& filesystem::path::operator++()
 	return *this;
 }
 
-filesystem::path filesystem::path::operator*() const
+std::string path::operator*() const
 {
 	return string();
 }
 
-bool filesystem::path::empty() const
+bool path::empty() const
 {
 	return path_.empty();
 }
 
-filesystem::path filesystem::path::dirname() const
+path path::dirname() const
 {
 	string::size_type p = path_.rfind( '/' );
 	if ( p == string::npos ) return path( "." );
 	return path_.substr( 0, p );
 }
 
-std::string filesystem::path::string() const
+std::string path::string() const
 {
 	return path_.substr( 0, position_ );
 }
 
-
-std::ostream &filesystem::operator << ( std::ostream &stream, const filesystem::path &path )
+path filesystem::operator + ( const path &p, const string &str )
 {
-	return stream << path.string();
+	path result( p );
+	return result += str;
+}
+
+std::ostream& filesystem::operator << (std::ostream &stream, const path &p )
+{
+	return stream << p.string();
 }

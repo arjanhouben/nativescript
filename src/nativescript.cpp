@@ -4,25 +4,66 @@
 #include <iostream>
 #include <unistd.h>
 
-//#include "utilities.h"
-#include "filesystem.h"
-#include "generic.h"
-#include "config.h"
-#include "path.h"
+#include <generic.h>
+#include <config.h>
+#include <filesystem.h>
 
 using namespace std;
 using namespace filesystem;
 
-static const string defaultHeader( "#include <iostream>\n"
-					  "#include <fstream>\n"
-					  "#include <vector>\n"
-					  "#include <map>\n"
-					  "#include <cctype>\n"
-					  "#include <algorithm>\n"
-					  "using namespace std;\n"
-					  "int main( int argc, const char *argv_c_str[] ) {\n"
-					  "\tstd::map< int, string > argv;\n"
-					  "\tfor ( int i = 0; i < argc; ++i ) argv[ i ] = argv_c_str[ i ];\n" );
+
+static const string defaultHeader(
+		"#include <array>\n"
+		"#include <bitset>\n"
+		"#include <deque>\n"
+		"#include <forward_list>\n"
+		"#include <list>\n"
+		"#include <map>\n"
+		"#include <queue>\n"
+		"#include <set>\n"
+		"#include <stack>\n"
+		"#include <unordered_map>\n"
+		"#include <unordered_set>\n"
+		"#include <vector>\n"
+		"#include <algorithm>\n"
+		"#include <chrono>\n"
+		"#include <functional>\n"
+		"#include <iterator>\n"
+		"#include <memory>\n"
+		"#include <stdexcept>\n"
+		"#include <tuple>\n"
+		"#include <utility>\n"
+		"#include <locale>\n"
+		"#include <codecvt>\n"
+		"#include <string>\n"
+		"#include <regex>\n"
+		"#include <fstream>\n"
+		"#include <iomanip>\n"
+		"#include <ios>\n"
+		"#include <iosfwd>\n"
+		"#include <iostream>\n"
+		"#include <istream>\n"
+		"#include <ostream>\n"
+		"#include <sstream>\n"
+		"#include <streambuf>\n"
+		"#include <exception>\n"
+		"#include <limits>\n"
+		"#include <new>\n"
+		"#include <typeinfo>\n"
+		"#include <thread>\n"
+		"#include <mutex>\n"
+		"#include <condition_variable>\n"
+		"#include <future>\n"
+		"#include <complex>\n"
+		"#include <random>\n"
+		"#include <valarray>\n"
+		"#include <numeric>\n"
+		"#include <commandline_utilities>\n"
+		"using namespace std;\n"
+		"using namespace filesystem;\n"
+		"int main( int argc, const char *argv_c_str[] ) {\n"
+		"\tstd::map< int, string > argv;\n"
+		"\tfor ( int i = 0; i < argc; ++i ) argv[ i ] = argv_c_str[ i ];\n" );
 
 int main( int argc, char *argv[] )
 {
@@ -78,10 +119,13 @@ int main( int argc, char *argv[] )
 
 			stringstream command;
 			command << config.compilerCommand() << ' '
-					<< join( config.cxxFlags(), " " ) << ' '
-					<< join( config.includeDirectories(), " ", "-I" ) << ' '
-					<< join( config.linkDirectories(), " ", "-L" ) << ' '
-					<< join( config.libraries() ) << ' '
+					<< config.cxxFlags() << ' '
+					<< config.includeDirectories() << ' '
+					<< config.linkDirectories() << ' '
+					<< config.libraries() << ' '
+					<< "-I" << config.baseDirectory() / "include" << ' '
+					<< "-L" << config.baseDirectory() / "lib" << ' '
+					<< "-lcommandline_utilities "
 					<< sourcePath
 					<< " -o " << exePath;
 
