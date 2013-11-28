@@ -3,6 +3,7 @@
 #include <ios>
 #include <string>
 #include <vector>
+#include <map>
 #include <filesystem.h>
 
 class Config
@@ -20,7 +21,10 @@ class Config
 		filesystem::path sourceDirectory() const;
 
 		std::string compilerCommand() const;
+		std::string debugCommand() const;
 		std::string cxxFlags() const;
+		std::string releaseFlags() const;
+		std::string debugFlags() const;
 		std::string includeDirectories() const;
 		std::string linkDirectories() const;
 		std::string libraries() const;
@@ -30,6 +34,8 @@ class Config
 
 	private:
 
+		std::map< std::string, class SaveValue > getConfigValues();
+
 		bool validate();
 
 		std::string baseDirectory_,
@@ -38,7 +44,10 @@ class Config
 			header_,
 			footer_,
 			compilerCommand_,
+			debugCommand_,
 			cxxFlags_,
+			releaseFlags_,
+			debugFlags_,
 			includeDirectories_,
 			linkDirectories_,
 			libraries_;

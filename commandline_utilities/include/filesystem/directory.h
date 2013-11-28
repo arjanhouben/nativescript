@@ -17,7 +17,8 @@ namespace filesystem
 				all = 0,
 				no_dot = 1 << 0,
 				no_dot_dot = 1 << 1,
-				no_dots = no_dot | no_dot_dot
+				no_start_dot = 1 << 2,
+				no_dots = no_dot | no_dot_dot | no_start_dot
 			};
 
 			class iterator
@@ -26,17 +27,25 @@ namespace filesystem
 
 					static bool match( options o, const iterator &f );
 
-					explicit iterator( struct dirent *entry = 0, DIR *dir = 0, options _options = all );
+					explicit iterator( struct dirent *entry, DIR *dir, options _options );
 
-					iterator operator*();
+					const iterator& operator*() const;
+
+					iterator& operator*();
 
 					iterator operator++();
+
+					iterator operator++( int );
 
 					bool operator!=( iterator const& rhs ) const;
 
 					bool operator==( iterator const& rhs ) const;
 
 					bool operator==( const char *rhs ) const;
+
+					bool empty() const;
+
+					char operator[]( size_t index ) const;
 
 					std::string string() const;
 
