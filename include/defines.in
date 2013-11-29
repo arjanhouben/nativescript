@@ -1,0 +1,11 @@
+#pragma once
+
+#include <string>
+
+namespace detected
+{
+	const std::string compiler( "@CMAKE_CXX_COMPILER@" );
+	const std::string cxx_flags( "@CMAKE_CXX_FLAGS@" );
+	const std::string cxx_flags_release( "@CMAKE_CXX_FLAGS_RELEASE@" );
+	const std::string cxx_flags_debug( "@CMAKE_CXX_FLAGS_DEBUG@" );
+}
