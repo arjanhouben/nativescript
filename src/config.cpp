@@ -1,12 +1,14 @@
 #include <config.h>
 #include <filesystem.h>
 #include <generic.h>
+#include <defines.h>
 
 #include <string>
 #include <iostream>
 #include <sstream>
 #include <map>
 #include <fstream>
+#include <stdexcept>
 
 using namespace std;
 using namespace filesystem;
@@ -91,11 +93,11 @@ Config::Config() :
 	sourceDirectory_( "source/" ),
 	header_( "header.cpp" ),
 	footer_( "footer.cpp" ),
-	compilerCommand_( "clang++" ),
+	compilerCommand_( detected::compiler ),
 	debugCommand_( "lldb" ),
-	cxxFlags_( "-x c++ -Wall -Wfatal-errors -std=c++11 -stdlib=libc++" ),
-	releaseFlags_( "-O3" ),
-	debugFlags_( "-g" ),
+	cxxFlags_( detected::cxx_flags ),
+	releaseFlags_( detected::cxx_flags_release ),
+	debugFlags_( detected::cxx_flags_debug ),
 	includeDirectories_(),
 	linkDirectories_(),
 	libraries_()

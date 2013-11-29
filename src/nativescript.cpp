@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <map>
 #include <stdexcept>
+#include <functional>
 
 #include <generic.h>
 #include <config.h>
@@ -119,7 +120,7 @@ const path executable_path( const Config &config, const path &script, build_type
 const path get_executable( const Config &config, const path &script, build_type build = release )
 {
 	const path exePath = executable_path( config, script, build );
-	const path sourcePath = config.sourceDirectory() / script;
+	const path sourcePath = config.sourceDirectory() / script + ".cpp";
 
 	if ( !exists( exePath ) || modification_date( sourcePath ) <= modification_date( path( script ) ) )
 	{
