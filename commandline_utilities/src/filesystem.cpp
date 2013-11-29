@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include <fstream>
+#include <stdexcept>
 
 using namespace std;
 using namespace filesystem;
@@ -20,7 +21,11 @@ namespace filesystem
 	{
 		struct stat info = { 0 };
 		stat( filename.c_str(), &info );
+#if __APPLE__
 		return double( info.st_mtimespec.tv_sec ) + double( info.st_mtimespec.tv_nsec ) / 1e6;
+#else
+		return info.st_mtime;;
+#endif
 	}
 
 	bool exists( const path &path )

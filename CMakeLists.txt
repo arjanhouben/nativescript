@@ -37,12 +37,19 @@ install(
 		WORLD_WRITE WORLD_READ WORLD_EXECUTE
 )
 
-set( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS}\ -std=c++11\ -stdlib=libc++\ -Wall )
+if( APPLE )
+	set( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS}\ -Wall\ -Wfatal-errors\ -std=c++11\ -stdlib=libc++ )
+else()
+	set( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS}\ -Wall\ -Wfatal-errors\ -std=c++11 )
+endif()
 
 include_directories(
 	include
 	commandline_utilities/include
+	${CMAKE_CURRENT_BINARY_DIR}
 )
+
+configure_file( include/defines.in ${CMAKE_CURRENT_BINARY_DIR}/defines.h )
 
 add_subdirectory( commandline_utilities )
 
