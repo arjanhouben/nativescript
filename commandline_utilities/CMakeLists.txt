@@ -11,7 +11,6 @@ add_library( commandline_utilities
 	include/generic.h
 	include/filesystem/directory.h
 	src/filesystem/directory.cpp
-#    src/generic.cpp
 )
 
 install(

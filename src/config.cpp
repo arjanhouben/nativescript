@@ -70,10 +70,20 @@ class SaveValue
 			return destination_;
 		}
 
+		std::string str() const
+		{
+			return destination_ ? *destination_ : std::string();
+		}
+
 	private:
 
 		string *destination_;
 };
+
+ostream& operator << ( ostream &stream, const SaveValue &value )
+{
+	return stream << value.str();
+}
 
 Config::Config() :
 	baseDirectory_( defaultBaseDir().string() ),
@@ -82,11 +92,31 @@ Config::Config() :
 	header_( "header.cpp" ),
 	footer_( "footer.cpp" ),
 	compilerCommand_( "clang++" ),
-	cxxFlags_( "-g -x c++ -O3 -Wall -Wfatal-errors -std=c++11 -stdlib=libc++" ),
-	includeDirectories_( "-I" + baseDirectory_ + "/include" ),
+	debugCommand_( "lldb" ),
+	cxxFlags_( "-x c++ -Wall -Wfatal-errors -std=c++11 -stdlib=libc++" ),
+	releaseFlags_( "-O3" ),
+	debugFlags_( "-g" ),
+	includeDirectories_(),
 	linkDirectories_(),
 	libraries_()
 {
+}
+
+map< string, SaveValue > Config::getConfigValues()
+{
+	map<string, SaveValue> saveValues;
+	saveValues[ "base_directory" ] = &baseDirectory_;
+	saveValues[ "build_directory" ] = &buildDirectory_;
+	saveValues[ "source_directory" ] = &sourceDirectory_;
+	saveValues[ "compiler" ] = &compilerCommand_;
+	saveValues[ "debugger" ] = &debugCommand_;
+	saveValues[ "cxx_flags" ] = &cxxFlags_;
+	saveValues[ "release_flags" ] = &releaseFlags_;
+	saveValues[ "debug_flags" ] = &debugFlags_;
+	saveValues[ "include_directories" ] = &includeDirectories_;
+	saveValues[ "link_directories" ] = &linkDirectories_;
+	saveValues[ "libraries" ] = &libraries_;
+	return saveValues;
 }
 
 Config Config::readConfigFile( const path &configPath )
@@ -110,15 +140,7 @@ Config Config::readConfigFile( const path &configPath )
 		{
 			Values values( parseConfig( configFile ) );
 
-			map< string, SaveValue > saveValues;
-			saveValues[ "base_directory" ] = &config.baseDirectory_;
-			saveValues[ "build_directory" ] = &config.buildDirectory_;
-			saveValues[ "source_directory" ] = &config.sourceDirectory_;
-			saveValues[ "compiler" ] = &config.compilerCommand_;
-			saveValues[ "cxx_flags" ] = &config.cxxFlags_;
-			saveValues[ "include_directories" ] = &config.includeDirectories_;
-			saveValues[ "link_directories" ] = &config.linkDirectories_;
-			saveValues[ "libraries" ] = &config.libraries_;
+			map< string, SaveValue > saveValues( config.getConfigValues() );
 
 			for ( auto value : values )
 			{
@@ -140,17 +162,14 @@ Config Config::readConfigFile( const path &configPath )
 void Config::writeDefault( ostream &stream )
 {
 	Config config;
+
 	stream << "# these are the default values, you can change them to your preference" << endl
 		   << "# if this file is missing, it will be auto-generated" << endl
-		   << "# this file needs to be renamed from 'config.sample' to 'config' for it to be effective" << endl << endl
-		   << "base_directory = " << config.baseDirectory() << endl << endl
-		   << "build_directory = " << config.buildDirectory_ << endl << endl
-		   << "source_directory = " << config.sourceDirectory_ << endl << endl
-		   << "compiler = " << config.compilerCommand_ << endl << endl
-		   << "cxx_flags = " << config.cxxFlags_ << endl << endl
-		   << "include_directories = " << config.includeDirectories_ << endl << endl
-		   << "link_directories = " << config.linkDirectories_ << endl << endl
-		   << "libraries = " << config.libraries_ << endl;
+		   << "# this file needs to be renamed from 'config.sample' to 'config' for it to be effective" << endl << endl;
+	for ( auto i : config.getConfigValues() )
+	{
+		stream << i.first << " = " << i.second << endl << endl;
+	}
 }
 
 path Config::baseDirectory() const
@@ -173,9 +192,24 @@ string Config::compilerCommand() const
 	return compilerCommand_;
 }
 
+string Config::debugCommand() const
+{
+	return debugCommand_;
+}
+
 string Config::cxxFlags() const
 {
 	return cxxFlags_;
+}
+
+string Config::releaseFlags() const
+{
+	return releaseFlags_;
+}
+
+string Config::debugFlags() const
+{
+	return debugFlags_;
 }
 
 string Config::includeDirectories() const

@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <string>
+#include <iostream>
 
 typedef std::vector< std::string > stringlist;
 
@@ -38,4 +39,31 @@ stringlist split( const T &t, const std::string &separator = " ", bool keepSepar
 	}
 	if ( s != t.size() ) result.push_back( t.substr( s ) );
 	return result;
+}
+
+struct OutputHelper
+{
+	~OutputHelper()
+	{
+		std::cout << std::endl;
+	}
+};
+
+struct Output
+{
+	Output() { }
+} static const out;
+
+template < class T >
+OutputHelper operator << ( const Output&, T &&t )
+{
+	std::cout << t;
+	return OutputHelper();
+}
+
+template < class T >
+const OutputHelper& operator << ( const OutputHelper &helper, T &&t )
+{
+	std::cout << t;
+	return helper;
 }
