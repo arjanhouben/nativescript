@@ -22,6 +22,7 @@ if( NOT ${CMAKE_INSTALL_PREFIX} STREQUAL ${HOMEDIR} )
 	set( INSTALL_SYMLINKS ${HOMEDIR}/.${NATIVESCRIPT_BASE_DIR} )
 else()
 	set( NATIVESCRIPT_BASE_DIR .nativescript )
+	set( BIN_PREFIX ${NATIVESCRIPT_BASE_DIR}/ )
 endif()
 
 file( MAKE_DIRECTORY .nativescript )
@@ -36,6 +37,14 @@ install(
 		GROUP_WRITE GROUP_READ GROUP_EXECUTE
 		WORLD_WRITE WORLD_READ WORLD_EXECUTE
 )
+
+if( 0 )
+	string( REPLACE ":" ";" path "$ENV{PATH}" )
+	list( REMOVE_DUPLICATES path )
+	foreach( p ${path} )
+	message( "dir: ${p}" )
+	endforeach()
+endif()
 
 if( APPLE )
 	set( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS}\ -Wall\ -Wfatal-errors\ -std=c++11\ -stdlib=libc++ )
@@ -67,5 +76,5 @@ install(
 	TARGETS
 		nativescript
 	DESTINATION
-		bin
+		${BIN_PREFIX}bin
 )
