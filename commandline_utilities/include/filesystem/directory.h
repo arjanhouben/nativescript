@@ -1,8 +1,15 @@
 #pragma once
 
-#include <dirent.h>
+#if _WIN32
+#include <Windows.h>
+typedef HANDLE directory_t;
+typedef WIN32_FIND_DATA directory_entry_t;
+#else
+//#include <dirent.h>
+typedef struct DIR* directory_t;
+typedef struct dirent* directory_entry_t;
+#endif
 #include <filesystem/path.h>
-
 
 namespace filesystem
 {
@@ -27,7 +34,7 @@ namespace filesystem
 
 					static bool match( options o, const iterator &f );
 
-					explicit iterator( struct dirent *entry, DIR *dir, options _options );
+					explicit iterator( directory_entry_t entry, directory_t dir, options _options );
 
 					const iterator& operator*() const;
 
@@ -51,8 +58,8 @@ namespace filesystem
 
 				private:
 
-					DIR *dir_;
-					dirent *entry_;
+					directory_t dir_;
+					directory_entry_t entry_;
 					options options_;
 			};
 
@@ -67,7 +74,7 @@ namespace filesystem
 		private:
 
 			path path_;
-			DIR *dir_;
+			directory_entry_t dir_;
 			options types_;
 	};
 

@@ -7,6 +7,14 @@ using namespace std;
 
 namespace filesystem
 {
+	directory_entry_t open_directory( const path &p )
+	{
+#if _WIN32
+#else
+		return opendir( p.c_str() );
+#endif
+		return directory_entry_t();
+	}
 
 	bool directory::iterator::match( directory::options o, const iterator &f )
 	{
@@ -28,7 +36,7 @@ namespace filesystem
 		}
 	}
 
-	directory::iterator::iterator( dirent *entry, DIR *dir, directory::options _options ) :
+	directory::iterator::iterator( directory_entry_t entry, directory_t dir, directory::options _options ) :
 		dir_( dir ),
 		entry_( entry ),
 		options_( _options )
@@ -37,7 +45,10 @@ namespace filesystem
 		{
 			while ( match( options_, *this ) )
 			{
+#if _WIN32
+#else
 				entry_ = readdir( dir_ );
+#endif
 			}
 		}
 	}
@@ -54,8 +65,11 @@ namespace filesystem
 
 	directory::iterator directory::iterator::operator++()
 	{
-		if ( !dir_ ) return directory::iterator( 0, 0, options_ );
+		if ( !dir_ ) return directory::iterator( directory_entry_t(), directory_t(), options_ );
+#if _WIN32
+#else
 		entry_ = readdir( dir_ );
+#endif
 		return *this;
 	}
 
@@ -93,37 +107,44 @@ namespace filesystem
 
 	string directory::iterator::string() const
 	{
+#if _WIN32
+#else
 		if ( entry_ )
 		{
 			return entry_->d_name;
 		}
+#endif
 		return std::string();
 	}
 
 	directory::directory( const string &path, options types ) :
 		path_( path ),
-		dir_( opendir( path_.c_str() ) ),
+		dir_( open_directory( path_ ) ),
 		types_( types )
 	{
 	}
 
 	directory::directory( options types ) :
 		path_( cwd() ),
-		dir_( opendir( path_.c_str() ) ),
+		dir_( open_directory( path_ ) ),
 		types_( types )
 	{
 	}
 
 	directory::iterator directory::begin()
 	{
+#if _WIN32
+		return end();
+#else
 		if ( !dir_ ) return end();
 		rewinddir( dir_ );
 		return directory::iterator( readdir( dir_ ), dir_, types_ );
+#endif
 	}
 
 	directory::iterator directory::end()
 	{
-		return directory::iterator( 0, dir_, types_ );
+		return directory::iterator( dir_, directory_t(), types_ );
 	}
 
 	ostream &operator << ( ostream &stream, const directory::iterator &i )

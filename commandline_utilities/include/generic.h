@@ -6,6 +6,7 @@
 
 typedef std::vector< std::string > stringlist;
 
+#if 0
 template < typename InputIterator, typename Seperator = std::string, typename Prefix = std::string, typename Postfix = std::string >
 std::string join( InputIterator start, InputIterator end, Seperator seperator = Seperator(), Prefix prefix = Prefix(), Postfix postix = Postfix() )
 {
@@ -24,6 +25,7 @@ std::string join( Input input, Seperator seperator = Seperator(), Prefix prefix 
 {
 	return join( input.begin(), input.end(), seperator, prefix, postix );
 }
+#endif
 
 template < class T >
 stringlist split( const T &t, const std::string &separator = " ", bool keepSeparator = false )
