@@ -7,13 +7,27 @@ using namespace std;
 
 namespace filesystem
 {
-	directory_entry_t open_directory( const path &p )
+	directory_entry_t next_directory_item( directory_t &dir )
 	{
 #if _WIN32
+		directory_entry_t entry;
+		FindNextFile( dir, &entry );
+		return entry;
 #else
-		return opendir( p.c_str() );
+		return readdir( dir );
 #endif
-		return directory_entry_t();
+	}
+
+	pair< directory_t, directory_entry_t > first_directory_entry( const path &p )
+	{
+		pair< directory_t, directory_entry_t > result;
+#if _WIN32
+		result.first = FindFirstFile( p.c_str(), &result.second );
+#else
+		result.first = opendir( p.c_str() );
+		result.second = next_directory_item( result.first );
+#endif
+		return result;
 	}
 
 	bool directory::iterator::match( directory::options o, const iterator &f )
@@ -45,10 +59,7 @@ namespace filesystem
 		{
 			while ( match( options_, *this ) )
 			{
-#if _WIN32
-#else
-				entry_ = readdir( dir_ );
-#endif
+				entry_ = next_directory_item( dir_ );
 			}
 		}
 	}
@@ -66,10 +77,7 @@ namespace filesystem
 	directory::iterator directory::iterator::operator++()
 	{
 		if ( !dir_ ) return directory::iterator( directory_entry_t(), directory_t(), options_ );
-#if _WIN32
-#else
-		entry_ = readdir( dir_ );
-#endif
+		entry_ = next_directory_item( dir_ );
 		return *this;
 	}
 
@@ -108,43 +116,40 @@ namespace filesystem
 	string directory::iterator::string() const
 	{
 #if _WIN32
+		return entry_.cFileName;
 #else
 		if ( entry_ )
 		{
 			return entry_->d_name;
 		}
-#endif
 		return std::string();
+#endif
 	}
 
 	directory::directory( const string &path, options types ) :
 		path_( path ),
-		dir_( open_directory( path_ ) ),
+//		dir_( open_directory( path_ ) ),
 		types_( types )
 	{
 	}
 
 	directory::directory( options types ) :
 		path_( cwd() ),
-		dir_( open_directory( path_ ) ),
+//		dir_( open_directory( path_ ) ),
 		types_( types )
 	{
 	}
 
 	directory::iterator directory::begin()
 	{
-#if _WIN32
-		return end();
-#else
-		if ( !dir_ ) return end();
-		rewinddir( dir_ );
-		return directory::iterator( readdir( dir_ ), dir_, types_ );
-#endif
+		pair< directory_t, directory_entry_t > start = first_directory_entry( path_ );
+
+		return directory::iterator( start.second, start.first, types_ );
 	}
 
 	directory::iterator directory::end()
 	{
-		return directory::iterator( dir_, directory_t(), types_ );
+		return directory::iterator( directory_entry_t(), directory_t(), types_ );
 	}
 
 	ostream &operator << ( ostream &stream, const directory::iterator &i )

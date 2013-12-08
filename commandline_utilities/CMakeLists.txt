@@ -9,8 +9,11 @@ add_library( commandline_utilities
 	include/filesystem/path.h
 	src/filesystem/path.cpp
 	include/generic.h
+	src/generic.cpp
 	include/filesystem/directory.h
 	src/filesystem/directory.cpp
+	include/arguments.h
+	src/arguments.cpp
 )
 
 install(

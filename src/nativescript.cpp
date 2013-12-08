@@ -14,11 +14,12 @@
 #include <generic.h>
 #include <config.h>
 #include <filesystem.h>
+#include <arguments.h>
 
 using namespace std;
 using namespace filesystem;
 
-void handle_script( int, char *[] );
+void handle_script( const arguments & );
 
 enum build_type
 {
@@ -34,16 +35,16 @@ class action
 			func_( handle_script ) { }
 
 		template < typename T >
-		action( T &&t ) :
+		action( const T &t ) :
 			func_( t ) { }
 
-		void operator()( int argc, char *argv[] )
+		void operator()( const arguments &args )
 		{
-			func_( argc, argv );
+			func_( args );
 		}
 
 	private:
-		function< void( int, char *[] ) > func_;
+		function< void( const arguments & ) > func_;
 };
 
 map< string, action > initialize_argument_handling();
@@ -105,10 +106,7 @@ static const string defaultHeader(
 
 Config get_config()
 {
-	const char *homeDir = getenv( "HOME" );
-	if ( !homeDir ) throw logic_error( "environment variable 'HOME' not set!" );
-
-	return Config( Config::readConfigFile( path( homeDir ) / ".nativescript" / "config" ) );
+	return Config( Config::readConfigFile( path( get_homedir() ) / ".nativescript" / "config" ) );
 }
 
 path executable_path( const Config &config, const path &script, build_type build = release )
@@ -190,20 +188,35 @@ const path get_executable( const Config &config, const path &script, build_type 
 	return exePath;
 }
 
-void handle_script( int argc, char *argv[] )
+void handle_script( const arguments &args )
 {
-	const path script( absolute( path( argv[ 1 ] ), cwd() ) );
+	const path script( absolute( path( args[ 1 ] ), cwd() ) );
 
 	Config config( get_config() );
 
 	const path exePath = get_executable( config, script );
 
-	execv( exePath.c_str(), argv + 1 );
+	vector< string > argv_string;
+	vector< const char* > argv;
+	for ( auto i : args )
+	{
+		argv_string.push_back( i );
+		argv.push_back( argv_string.back().c_str() );
+	}
+	argv.push_back( 0 );
+
+#if _WIN32
+	auto call_exec = _execv;
+#else
+	auto call_exec = execv;
+#endif
+
+	call_exec( exePath.c_str(), argv.data() );
 }
 
-void debug_script( int argc, char *argv[] )
+void debug_script( const arguments &args )
 {
-	const path script( absolute( path( argv[ 2 ] ), cwd() ) );
+	const path script( absolute( path( args[ 2 ] ), cwd() ) );
 
 	Config config( get_config() );
 
@@ -215,9 +228,9 @@ void debug_script( int argc, char *argv[] )
 
 	stream << "file " << exe << endl
 				 << "r ";
-	for ( int i = 3; i < argc; ++i )
+	for ( size_t i = 3; i < args.size(); ++i )
 	{
-		stream << argv[ i ] << ' ';
+		stream << args[ i ] << ' ';
 	}
 	stream << endl << "q" << endl;
 
@@ -228,21 +241,21 @@ void debug_script( int argc, char *argv[] )
 //	execv( config.debugCommand().c_str(), argv + 1 );
 }
 
-void print_usage( int argc, char *argv[] )
+void print_usage( const arguments & )
 {
 	cout << "you're doing it wrong!" << endl;
 }
 
-void show_executable( int argc, char *argv[] )
+void show_executable( const arguments &args )
 {
-	const path script( absolute( path( argv[ 2 ] ), cwd() ) );
+	const path script( absolute( path( args[ 2 ] ), cwd() ) );
 	Config config( get_config() );
 	cout << executable_path( config, script ) << endl;
 }
 
-void show_debug_executable( int argc, char *argv[] )
+void show_debug_executable( const arguments &args )
 {
-	const path script( absolute( path( argv[ 2 ] ), cwd() ) );
+	const path script( absolute( path( args[ 2 ] ), cwd() ) );
 	Config config( get_config() );
 	cout << executable_path( config, script, debug ) << endl;
 }
@@ -262,13 +275,15 @@ int main( int argc, char *argv[] )
 {
 	try
 	{
+		arguments args( argc, argv );
+
 		if ( argc < 2 )
 		{
-			print_usage( argc, argv );
+			print_usage( args );
 		}
 		else
 		{
-			argument_handling[ argv[ 1 ] ]( argc, argv );
+			argument_handling[ args[ 1 ] ]( args );
 		}
 	}
 	catch ( const exception &err )

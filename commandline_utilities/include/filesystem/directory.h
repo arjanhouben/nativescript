@@ -74,7 +74,7 @@ namespace filesystem
 		private:
 
 			path path_;
-			directory_entry_t dir_;
+//			directory_entry_t dir_;
 			options types_;
 	};
 

@@ -69,3 +69,7 @@ const OutputHelper& operator << ( const OutputHelper &helper, T &&t )
 	std::cout << t;
 	return helper;
 }
+
+std::string get_env( const std::string &key );
+
+std::string get_homedir();

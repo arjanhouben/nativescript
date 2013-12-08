@@ -17,12 +17,7 @@ typedef map< string, string > Values;
 
 path defaultBaseDir()
 {
-    const char *homeDir = getenv( "HOME" );
-    if ( !homeDir )
-    {
-        throw logic_error( "no 'HOME' directory found in environment!" );
-    }
-    return path( homeDir ) / ".nativescript/";
+    return path( get_homedir() ) / ".nativescript/";
 }
 
 void trim( string &s )
@@ -52,7 +47,7 @@ Values parseConfig( std::istream &stream )
         string key;
         if ( ( line >> key >> singleChar ) && singleChar == '=' )
         {
-            values[ key ] = tmp.substr( line.tellg() );
+            values[ key ] = tmp.substr( static_cast< size_t >( line.tellg() ) );
             trim( values[ key ] );
         }
         else if ( !key.empty() && key[ 0 ] != '#' )
@@ -79,7 +74,7 @@ class SaveValue
             {
                 *destination_ = value;
             }
-            return destination_;
+            return destination_ != 0;
         }
 
         std::string str() const
