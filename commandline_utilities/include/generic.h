@@ -73,3 +73,5 @@ const OutputHelper& operator << ( const OutputHelper &helper, T &&t )
 std::string get_env( const std::string &key );
 
 std::string get_homedir();
+
+void trim( std::string &s );

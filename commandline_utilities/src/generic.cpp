@@ -11,9 +11,9 @@ string get_env( const string &key )
 	errno_t err = _dupenv_s( &value, &len, key.c_str() );
 	if ( !err )
 	{
-		if ( len > 0 )
+		if ( len > 1 )
 		{
-			result.assign( value, value + len );
+			result.assign( value, value + len - 1 );
 		}
 		free( value );
 	}
@@ -29,9 +29,24 @@ string get_homedir()
 #if _WIN32
 	if ( homeDir.empty() )
 	{
-		homeDir = get_env( "HOMEDRIVE" ) + get_env( "HOMEPATH" );
+		homeDir = get_env( "HOMEDRIVE" );
+		homeDir += get_env( "HOMEPATH" );
 	}
 #endif
 	if ( homeDir.empty() ) throw logic_error( "environment variable 'HOME' not set!" );
 	return homeDir;
+}
+
+void trim( string &s )
+{
+    auto start = s.begin();
+    while ( start != s.end() && isspace( *start ) )
+    {
+        start = s.erase( start );
+    }
+
+	while ( !s.empty() && isspace( s.back() ) )
+	{
+		s.pop_back();
+	}
 }

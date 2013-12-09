@@ -15,6 +15,7 @@ function( compare a b result )
 endfunction()
 
 if( WIN32 )
+	add_definitions( -DNOMINMAX )
 	set( HOMEDIR $ENV{HOMEDRIVE}$ENV{HOMEPATH} )
 else()
 	set( HOMEDIR $ENV{HOME} )
@@ -75,6 +76,19 @@ include_directories(
 	${CMAKE_CURRENT_BINARY_DIR}
 )
 
+if( MSVC )
+	set( DETECTED_INCLUDE_DIR "/I" )
+	set( DETECTED_LIBRARY_DIR "/LIBPATH:" )
+	set( DETECTED_LIBRARY_POSTFIX ".lib" )
+	set( DETECTED_LINK_PREFIX "/link " )
+	set( DETECTED_OUTPUT_CMD "/Fe" )
+else()
+	set( DETECTED_INCLUDE_DIR "-I" )
+	set( DETECTED_LIBRARY_DIR "-L" )
+	set( DETECTED_LIBRARY_CMD "-l " )
+	set( DETECTED_OUTPUT_CMD "-o " )
+endif()
+
 configure_file( include/defines.in ${CMAKE_CURRENT_BINARY_DIR}/defines.h )
 
 add_subdirectory( commandline_utilities )
@@ -83,6 +97,7 @@ add_executable( nativescript
 	src/nativescript.cpp
 	src/config.cpp
 	include/config.h
+	include/defines.in
 )
 
 target_link_libraries( nativescript

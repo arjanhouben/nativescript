@@ -62,4 +62,8 @@ namespace filesystem
 	path operator + ( const path &p, const std::string &str );
 
 	std::ostream& operator << ( std::ostream &stream, const path &p );
+	
+	std::string native( const path &p );
+	
+	std::string native( const std::string &path );
 }

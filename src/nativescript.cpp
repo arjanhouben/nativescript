@@ -10,11 +10,13 @@
 #include <map>
 #include <stdexcept>
 #include <functional>
+#include <algorithm>
 
 #include <generic.h>
 #include <config.h>
 #include <filesystem.h>
 #include <arguments.h>
+#include <defines.h>
 
 using namespace std;
 using namespace filesystem;
@@ -116,6 +118,7 @@ path executable_path( const Config &config, const path &script, build_type build
     {
         exe += "d";
     }
+	exe += detected::executable_extension;
     return exe;
 }
 
@@ -128,15 +131,20 @@ const path get_executable( const Config &config, const path &script, build_type 
 {
     const path exePath = executable_path( config, script, build );
     const path sourcePath = config.sourceDirectory() / script + ".cpp";
-
+	
     if ( !exists( exePath ) || modification_date( sourcePath ) <= modification_date( path( script ) ) )
     {
         const path scriptDir = path( script ).dirname();
         make_directory( config.sourceDirectory() / scriptDir );
 
-        ofstream source( sourcePath.c_str() );
+		ofstream destination( native( sourcePath ).c_str() );
 
-        ifstream scriptsource( script.c_str() );
+		if ( !destination )
+		{
+			throw logic_error( "could not write source file \"" + sourcePath.string() + "\"" );
+		}
+
+        ifstream scriptsource( native( script ).c_str() );
         string line;
         getline( scriptsource, line );
         if ( line.substr( 0, 2 ) != "#!" )
@@ -144,44 +152,49 @@ const path get_executable( const Config &config, const path &script, build_type 
             throw logic_error( "hashbang not found!" );
         }
 
-        ifstream header( config.header().c_str() );
+        ifstream header( native( config.header() ).c_str() );
         if ( header )
         {
-            source << header.rdbuf();
+            destination << header.rdbuf();
         }
         else
         {
-            source << defaultHeader;
+            destination << defaultHeader;
         }
 
         while ( getline( scriptsource, line ) )
         {
-            source << line << endl;
+            destination << line << endl;
         }
 
-        source << "}";
+        destination << "}";
 
-        source.close();
+        destination.close();
 
         make_directory( config.buildDirectory() / scriptDir );
 
+		const string quote( "\"" ), space( " " ); 
+
         stringstream command;
-        command << config.compilerCommand() << ' '
-                << config.cxxFlags() << ' '
-                << ( ( build == release ) ? config.releaseFlags() : config.debugFlags() ) << ' '
-                << config.includeDirectories() << ' '
-                << config.linkDirectories() << ' '
-                << config.libraries() << ' '
-                << "-I" << config.baseDirectory() / "include" << ' '
-                << "-L" << config.baseDirectory() / "lib" << ' '
-                << sourcePath << ' '
-                << "-lcommandline_utilities "
-                << "-o " << exePath;
+        command << quote << config.compilerCommand() << quote << space
+                << config.cxxFlags() << space
+                << ( ( build == release ) ? config.releaseFlags() : config.debugFlags() ) << space
+                << quote << native( sourcePath ) << quote << space
+                << config.includeDirectories() << space
+                << detected::include_dir << quote << native( config.baseDirectory() / "include" ) << quote << space
+                << config.libraries() << space
+                << detected::library_cmd << "commandline_utilities" << detected::library_postfix << space
+                << detected::output_cmd << quote << native( exePath ) << quote << space
+				<< detected::linker_prefix
+                << config.linkDirectories() << space
+                << detected::library_dir << quote << native( config.baseDirectory() / "lib" ) << quote
+				<< " > " << quote << native( exePath ) << ".log" << quote << " 2>&1";
 
         cout << command.str() << endl;
-        if ( system( command.str().c_str() ) )
+        if ( system( ( quote + command.str() + quote ).c_str() ) )
         {
-            throw logic_error( "problem compiling script" );
+			ifstream errorFile( native( exePath + ".log" ).c_str() );
+            throw logic_error( "problem compiling script\n" + string( istream_iterator< char >( errorFile ), istream_iterator< char >() ) );
         }
     }
 
@@ -212,7 +225,7 @@ void handle_script( const arguments &args )
     auto call_exec = execv;
 #endif
 
-    call_exec( exePath.c_str(), argv.data() );
+    call_exec( native( exePath ).c_str(), argv.data() );
 }
 
 void debug_script( const arguments &args )

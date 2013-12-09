@@ -11,12 +11,14 @@ using namespace std;
 
 namespace filesystem
 {
-    directory_entry_t next_directory_entry( directory_t &dir )
+	static const directory_entry_t empty_entry = { 0 };
+
+	directory_entry_t next_directory_entry( directory_t &dir )
     {
 #if _WIN32
-        directory_entry_t entry;
-        FindNextFile( dir, &entry );
-        return entry;
+		directory_entry_t entry;
+		if ( !FindNextFile( dir, &entry ) ) entry = empty_entry;
+		return entry;
 #else
         return readdir( dir );
 #endif
@@ -26,7 +28,7 @@ namespace filesystem
     {
         pair< directory_t, directory_entry_t > result;
 #if _WIN32
-        result.first = FindFirstFile( p.c_str(), &result.second );
+        result.first = FindFirstFile( native( p ).c_str(), &result.second );
 #else
         result.first = opendir( p.c_str() );
         result.second = next_directory_entry( result.first );
@@ -145,7 +147,6 @@ namespace filesystem
     directory::iterator directory::begin()
     {
         pair< directory_t, directory_entry_t > start = first_directory_entry( path_ );
-
         return directory::iterator( start.second, start.first, types_ );
     }
 

@@ -20,15 +20,6 @@ path defaultBaseDir()
     return path( get_homedir() ) / ".nativescript/";
 }
 
-void trim( string &s )
-{
-    auto start = s.begin();
-    while ( start != s.end() && isspace( *start ) )
-    {
-        start = s.erase( start );
-    }
-}
-
 Values parseConfig( std::istream &stream )
 {
     Values values;

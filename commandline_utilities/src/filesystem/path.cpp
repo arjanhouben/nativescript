@@ -3,6 +3,7 @@
 
 #include <string>
 #include <iostream>
+#include <algorithm>
 
 using namespace std;
 
@@ -12,6 +13,8 @@ namespace filesystem
 
 	string cleanup( string list )
 	{
+		replace( list.begin(), list.end(), '\\', '/' );
+
 		string::size_type p = list.find( "//" );
 		while ( p != string::npos )
 		{
@@ -110,7 +113,15 @@ namespace filesystem
 
 	path& path::operator /= ( const path &p )
 	{
-		path_ = cleanup( path_ + '/' +  p.string() );
+		std::string pathString( p.string() );
+#if _WIN32
+		auto rem = remove( pathString.begin(), pathString.end(), ':' );
+		if ( rem != pathString.end() )
+		{
+			pathString.erase( rem, pathString.end() );
+		}
+#endif
+		path_ = cleanup( path_ + '/' +  pathString );
 		position_ = path_.size();
 		return *this;
 	}
@@ -180,5 +191,26 @@ namespace filesystem
 	{
 		return stream << p.string();
 	}
-
+	
+	std::string native( const path &p )
+	{
+#if _WIN32
+		return native( p.string() );
+#else
+		return p.string();
+#endif
+	}
+	
+	std::string native( const std::string &path )
+	{
+#if _WIN32
+		std::string result( path );
+		replace( result.begin(), result.end(), '/', '\\' );
+		return result;
+#else
+		std::string result( path );
+		replace( result.begin(), result.end(), '\\', '/' );
+		return result;
+#endif
+	}
 }
