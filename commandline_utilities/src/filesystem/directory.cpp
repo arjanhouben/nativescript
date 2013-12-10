@@ -11,17 +11,20 @@ using namespace std;
 
 namespace filesystem
 {
-	static const directory_entry_t empty_entry = { 0 };
+    static const directory_entry_t empty_entry = { 0 };
 
-	directory_entry_t next_directory_entry( directory_t &dir )
+    directory_entry_t next_directory_entry( directory_t &dir )
     {
+        directory_entry_t entry = empty_entry;
+        if ( dir )
+        {
 #if _WIN32
-		directory_entry_t entry;
-		if ( !FindNextFile( dir, &entry ) ) entry = empty_entry;
-		return entry;
+            if ( !FindNextFile( dir, &entry ) ) entry = empty_entry;
 #else
-        return readdir( dir );
+            entry = readdir( dir );
 #endif
+        }
+        return entry;
     }
 
     pair< directory_t, directory_entry_t > first_directory_entry( const path &p )
@@ -38,16 +41,18 @@ namespace filesystem
 
     bool directory::iterator::match( directory::options o, const iterator &f )
     {
-        if ( f.empty() ) return false;
+        const std::string &str( f.string() );
+
+        if ( str.empty() ) return false;
 
         switch ( o )
         {
             case no_dot:
-                return f == ".";
+                return str == ".";
             case no_dot_dot:
-                return f == "..";
+                return str == "..";
             case no_start_dot:
-                return f[ 0 ] == '.';
+                return str[ 0 ] == '.';
             case no_dots:
                 return match( no_dot, f ) || match( no_dot_dot, f ) || match( no_start_dot, f );
             case all:
@@ -61,13 +66,7 @@ namespace filesystem
         entry_( entry ),
         options_( _options )
     {
-        if ( dir_ )
-        {
-            while ( match( options_, *this ) )
-            {
-                entry_ = next_directory_entry( dir_ );
-            }
-        }
+        handleOptions();
     }
 
     const directory::iterator &directory::iterator::operator*() const
@@ -82,8 +81,9 @@ namespace filesystem
 
     directory::iterator directory::iterator::operator++()
     {
-        if ( !dir_ ) return directory::iterator( directory_entry_t(), directory_t(), options_ );
+        if ( !dir_ ) return directory::iterator( 0, 0, options_ );
         entry_ = next_directory_entry( dir_ );
+        handleOptions();
         return *this;
     }
 
@@ -112,11 +112,6 @@ namespace filesystem
     bool directory::iterator::empty() const
     {
         return string().empty();
-    }
-
-    char directory::iterator::operator[]( size_t index ) const
-    {
-        return string()[ index ];
     }
 
     string directory::iterator::string() const
@@ -153,6 +148,17 @@ namespace filesystem
     directory::iterator directory::end()
     {
         return directory::iterator( directory_entry_t(), directory_t(), types_ );
+    }
+
+    void directory::iterator::handleOptions()
+    {
+        if ( dir_ )
+        {
+            while ( match( options_, *this ) )
+            {
+                entry_ = next_directory_entry( dir_ );
+            }
+        }
     }
 
     ostream &operator << ( ostream &stream, const directory::iterator &i )

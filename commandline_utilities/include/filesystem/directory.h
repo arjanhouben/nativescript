@@ -52,11 +52,11 @@ namespace filesystem
 
                     bool empty() const;
 
-                    char operator[]( size_t index ) const;
-
                     std::string string() const;
 
                 private:
+
+                    void handleOptions();
 
                     directory_t dir_;
                     directory_entry_t entry_;

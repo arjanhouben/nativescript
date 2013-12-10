@@ -118,7 +118,7 @@ path executable_path( const Config &config, const path &script, build_type build
     {
         exe += "d";
     }
-	exe += detected::executable_extension;
+    exe += detected::executable_extension;
     return exe;
 }
 
@@ -131,18 +131,18 @@ const path get_executable( const Config &config, const path &script, build_type 
 {
     const path exePath = executable_path( config, script, build );
     const path sourcePath = config.sourceDirectory() / script + ".cpp";
-	
+
     if ( !exists( exePath ) || modification_date( sourcePath ) <= modification_date( path( script ) ) )
     {
         const path scriptDir = path( script ).dirname();
         make_directory( config.sourceDirectory() / scriptDir );
 
-		ofstream destination( native( sourcePath ).c_str() );
+        ofstream destination( native( sourcePath ).c_str() );
 
-		if ( !destination )
-		{
-			throw logic_error( "could not write source file \"" + sourcePath.string() + "\"" );
-		}
+        if ( !destination )
+        {
+            throw logic_error( "could not write source file \"" + sourcePath.string() + "\"" );
+        }
 
         ifstream scriptsource( native( script ).c_str() );
         string line;
@@ -173,7 +173,7 @@ const path get_executable( const Config &config, const path &script, build_type 
 
         make_directory( config.buildDirectory() / scriptDir );
 
-		const string quote( "\"" ), space( " " ); 
+        const string quote( "\"" ), space( " " );
 
         stringstream command;
         command << quote << config.compilerCommand() << quote << space
@@ -185,15 +185,16 @@ const path get_executable( const Config &config, const path &script, build_type 
                 << config.libraries() << space
                 << detected::library_cmd << "commandline_utilities" << detected::library_postfix << space
                 << detected::output_cmd << quote << native( exePath ) << quote << space
-				<< detected::linker_prefix
+                << detected::linker_prefix
                 << config.linkDirectories() << space
                 << detected::library_dir << quote << native( config.baseDirectory() / "lib" ) << quote
-				<< " > " << quote << native( exePath ) << ".log" << quote << " 2>&1";
+                << " > " << quote << native( exePath ) << ".log" << quote << " 2>&1";
 
         cout << command.str() << endl;
-        if ( system( ( quote + command.str() + quote ).c_str() ) )
+//        if ( system( ( quote + command.str() + quote ).c_str() ) )
+        if ( system( ( command.str() ).c_str() ) )
         {
-			ifstream errorFile( native( exePath + ".log" ).c_str() );
+            ifstream errorFile( native( exePath + ".log" ).c_str() );
             throw logic_error( "problem compiling script\n" + string( istream_iterator< char >( errorFile ), istream_iterator< char >() ) );
         }
     }
@@ -209,10 +210,16 @@ void handle_script( const arguments &args )
 
     const path exePath = get_executable( config, script );
 
+    auto skip = 1;
     vector< vector< char > > argv_string;
     vector< char* > argv;
     for ( auto i : args )
     {
+        if ( skip )
+        {
+            --skip;
+            continue;
+        }
         argv_string.push_back( vector< char >( i.begin(), i.end() ) );
         argv_string.back().push_back( 0 );
         argv.push_back( argv_string.back().data() );

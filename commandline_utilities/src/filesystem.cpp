@@ -21,8 +21,7 @@ namespace filesystem
     bool is_executable( const path &filename )
     {
 #if _WIN32
-        filename;
-        return true;
+        return GetFileAttributes( native( path ).c_str() ) == /* is executable */;
 #else
         return ( access( filename.c_str(), X_OK ) == -1 );
 #endif
@@ -31,17 +30,17 @@ namespace filesystem
     double modification_date( const path &filename )
     {
 #if _WIN32
-		HANDLE file = CreateFile( native( filename ).c_str(), GENERIC_READ, 
-			FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
-			0,
-			OPEN_EXISTING,
-			FILE_ATTRIBUTE_NORMAL,
-			0 );
-		if ( !file ) return 0;
-		FILETIME modified = { 0 };
-		GetFileTime( file, 0, 0, &modified );
-		CloseHandle( file );
-		return *reinterpret_cast< PULONG64 >( &modified );
+        HANDLE file = CreateFile( native( filename ).c_str(), GENERIC_READ,
+            FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
+            0,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            0 );
+        if ( !file ) return 0;
+        FILETIME modified = { 0 };
+        GetFileTime( file, 0, 0, &modified );
+        CloseHandle( file );
+        return *reinterpret_cast< PULONG64 >( &modified );
 #else
         struct stat info = { 0 };
         stat( filename.c_str(), &info );
@@ -56,16 +55,16 @@ namespace filesystem
     bool exists( const path &path )
     {
 #if _WIN32
-		return GetFileAttributes( native( path ).c_str() ) != INVALID_FILE_ATTRIBUTES;
+        return GetFileAttributes( native( path ).c_str() ) != INVALID_FILE_ATTRIBUTES;
 #else
-		struct stat attributes;
-		return !stat( path.c_str(), &attributes ) );
+        struct stat attributes;
+        return !stat( path.c_str(), &attributes );
 #endif
     }
 
     void make_directory( const path &path )
     {
-		if ( exists( path ) ) return;
+        if ( exists( path ) ) return;
 
         for ( auto i : path )
         {
@@ -85,7 +84,7 @@ namespace filesystem
 #if _WIN32
         string result( GetCurrentDirectory( 0, 0 ), 0 );
         GetCurrentDirectory( result.size(), &result[ 0 ] );
-		while ( result.back() == 0 ) result.pop_back();
+        while ( result.back() == 0 ) result.pop_back();
         return path( result );
 #else
         char buf[ PATH_MAX ];
@@ -98,11 +97,11 @@ namespace filesystem
     {
         if ( p.empty() ) return false;
 #if _WIN32
-		const string str( p.string() );
-		string::size_type pos = str.find_first_not_of( "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" );
-		if ( pos == 0 || pos == string::npos ) return false;
-		if ( str[ pos ] != ':' ) return false;
-		return true;
+        const string str( p.string() );
+        string::size_type pos = str.find_first_not_of( "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" );
+        if ( pos == 0 || pos == string::npos ) return false;
+        if ( str[ pos ] != ':' ) return false;
+        return true;
 #else
         return p.string()[ 0 ] == '/';
 #endif
