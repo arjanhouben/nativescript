@@ -17,6 +17,7 @@ endfunction()
 if( WIN32 )
 	add_definitions( -DNOMINMAX )
 	set( HOMEDIR $ENV{HOMEDRIVE}$ENV{HOMEPATH} )
+	file( TO_CMAKE_PATH "${HOMEDIR}" HOMEDIR )
 else()
 	set( HOMEDIR $ENV{HOME} )
 endif()
@@ -40,11 +41,11 @@ else()
 	set( BIN_PREFIX ${NATIVESCRIPT_BASE_DIR}/ )
 endif()
 
-file( MAKE_DIRECTORY .nativescript )
+file( MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/.nativescript )
 
 install(
 	DIRECTORY
-		.nativescript
+		${CMAKE_BINARY_DIR}/.nativescript
 	DESTINATION
 		${HOMEDIR}
 	DIRECTORY_PERMISSIONS
