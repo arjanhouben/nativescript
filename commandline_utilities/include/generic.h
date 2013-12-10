@@ -57,14 +57,14 @@ struct Output
 } static const out;
 
 template < class T >
-OutputHelper operator << ( const Output&, T &&t )
+OutputHelper&& operator << ( const Output&, const T &t )
 {
 	std::cout << t;
-	return OutputHelper();
+	return move( OutputHelper() );
 }
 
 template < class T >
-const OutputHelper& operator << ( const OutputHelper &helper, T &&t )
+const OutputHelper& operator << ( const OutputHelper &helper, const T &t )
 {
 	std::cout << t;
 	return helper;

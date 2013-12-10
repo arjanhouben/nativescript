@@ -13,6 +13,13 @@ namespace filesystem
 	bool is_executable( const path &filename );
 
 	/**
+	 * @brief is_directory checks if @filename is a directory
+	 * @param filename path to file
+	 * @return true if the filename is a directory
+	 */
+	bool is_directory( const path &filename );
+
+	/**
 	 * @brief modification_date returns the modification date of @filename
 	 * @param filename path to file
 	 * @return modification date of @old_filename

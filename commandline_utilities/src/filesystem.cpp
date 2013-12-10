@@ -17,13 +17,24 @@ using namespace filesystem;
 
 namespace filesystem
 {
-
+	
     bool is_executable( const path &filename )
     {
 #if _WIN32
-        return GetFileAttributes( native( path ).c_str() ) == /* is executable */;
+		return ( GetFileAttributes( native( filename ).c_str() ) & FILE_EXECUTE ) != 0;
 #else
         return ( access( filename.c_str(), X_OK ) == -1 );
+#endif
+    }
+
+    bool is_directory( const path &filename )
+    {
+#if _WIN32
+		return ( GetFileAttributes( native( filename ).c_str() ) & FILE_ATTRIBUTE_DIRECTORY ) != 0;
+#else
+		struct stat info;
+		if ( stat( filename.c_str(), &info ) ) return 0;
+		return info.st_mode & S_IFDIR;
 #endif
     }
 
@@ -40,7 +51,7 @@ namespace filesystem
         FILETIME modified = { 0 };
         GetFileTime( file, 0, 0, &modified );
         CloseHandle( file );
-        return *reinterpret_cast< PULONG64 >( &modified );
+		return static_cast< double >( *reinterpret_cast< PULONG64 >( &modified ) );
 #else
         struct stat info = { 0 };
         stat( filename.c_str(), &info );

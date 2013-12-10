@@ -12,29 +12,47 @@ using namespace std;
 namespace filesystem
 {
     static const directory_entry_t empty_entry = { 0 };
-
-    directory_entry_t next_directory_entry( directory_t &dir )
+	
+    bool is_empty( const directory_entry_t &entry )
     {
-        directory_entry_t entry = empty_entry;
-        if ( dir )
+#if _WIN32
+		return entry.dwFileAttributes == 0;
+#else
+        return entry == 0;
+#endif
+    }
+	
+    void next_directory_entry( directory_t &dir, directory_entry_t &entry )
+    {
+		if ( dir && !is_empty( entry ) )
         {
 #if _WIN32
             if ( !FindNextFile( dir, &entry ) ) entry = empty_entry;
 #else
             entry = readdir( dir );
 #endif
+			if ( is_empty( entry ) )
+			{
+				dir = 0;
+			}
         }
-        return entry;
     }
 
     pair< directory_t, directory_entry_t > first_directory_entry( const path &p )
     {
         pair< directory_t, directory_entry_t > result;
 #if _WIN32
-        result.first = FindFirstFile( native( p ).c_str(), &result.second );
+		string filepath( native( p / "*" ) );
+		result.first = FindFirstFileEx( filepath.c_str(),
+			FindExInfoBasic,
+			&result.second,
+			FindExSearchNameMatch,
+			0,
+			FIND_FIRST_EX_LARGE_FETCH
+		);
 #else
         result.first = opendir( p.c_str() );
-        result.second = next_directory_entry( result.first );
+        next_directory_entry( result.first, result.second );
 #endif
         return result;
     }
@@ -81,8 +99,7 @@ namespace filesystem
 
     directory::iterator directory::iterator::operator++()
     {
-        if ( !dir_ ) return directory::iterator( 0, 0, options_ );
-        entry_ = next_directory_entry( dir_ );
+        next_directory_entry( dir_, entry_ );
         handleOptions();
         return *this;
     }
@@ -152,12 +169,9 @@ namespace filesystem
 
     void directory::iterator::handleOptions()
     {
-        if ( dir_ )
+        while ( dir_ && match( options_, *this ) )
         {
-            while ( match( options_, *this ) )
-            {
-                entry_ = next_directory_entry( dir_ );
-            }
+            next_directory_entry( dir_, entry_ );
         }
     }
 

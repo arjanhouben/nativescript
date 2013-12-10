@@ -176,7 +176,10 @@ const path get_executable( const Config &config, const path &script, build_type 
         const string quote( "\"" ), space( " " );
 
         stringstream command;
-        command << quote << config.compilerCommand() << quote << space
+#if _WIN32
+		command << quote;
+#endif
+        command << quote << native( config.compilerCommand() ) << quote << space
                 << config.cxxFlags() << space
                 << ( ( build == release ) ? config.releaseFlags() : config.debugFlags() ) << space
                 << quote << native( sourcePath ) << quote << space
@@ -187,10 +190,13 @@ const path get_executable( const Config &config, const path &script, build_type 
                 << detected::output_cmd << quote << native( exePath ) << quote << space
                 << detected::linker_prefix
                 << config.linkDirectories() << space
-                << detected::library_dir << quote << native( config.baseDirectory() / "lib" ) << quote
-                << " > " << quote << native( exePath ) << ".log" << quote << " 2>&1";
+                << detected::library_dir << quote << native( config.baseDirectory() / "lib" ) << quote;
+//                << " > " << quote << native( exePath ) << ".log" << quote << " 2>&1";
+#if _WIN32
+		command << quote;
+#endif
 
-        cout << command.str() << endl;
+		cout << command.str() << endl;
 //        if ( system( ( quote + command.str() + quote ).c_str() ) )
         if ( system( ( command.str() ).c_str() ) )
         {
