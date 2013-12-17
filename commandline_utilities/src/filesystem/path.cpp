@@ -56,7 +56,7 @@ namespace filesystem
 	}
 
 	path::path( const std::string &path ) :
-		path_( cleanup( path ) ),
+		path_( cleanup( native( path ) ) ),
 		position_( path_.size() )
 	{
 	}
@@ -121,7 +121,7 @@ namespace filesystem
 			pathString.erase( rem, pathString.end() );
 		}
 #endif
-		path_ = cleanup( path_ + '/' +  pathString );
+		path_ = cleanup( native( path_ + '/' +  pathString ) );
 		position_ = path_.size();
 		return *this;
 	}
@@ -176,9 +176,10 @@ namespace filesystem
 		return path_.substr( 0, p );
 	}
 
-	std::string path::string() const
+	const std::string& path::string() const
 	{
-		return path_.substr( 0, position_ );
+		cache_ = native( path_.substr( 0, position_ ) );
+		return cache_;
 	}
 
 	path operator + ( const path &p, const string &str )

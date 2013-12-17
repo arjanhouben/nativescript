@@ -9,7 +9,7 @@ namespace detected
 	const std::string cxx_flags_release( "@CMAKE_CXX_FLAGS_RELEASE@" );
 	const std::string cxx_flags_debug( "@CMAKE_CXX_FLAGS_DEBUG@" );
 	
-	const std::string executable_extension( "@CMAKE_EXECUTABLE_SUFFIX@" );
+	const std::string executable_extension( "@CMAKE_SHARED_LIBRARY_SUFFIX@" );
 
 	const std::string include_dir( "@DETECTED_INCLUDE_DIR@" );
 	const std::string library_dir( "@DETECTED_LIBRARY_DIR@" );

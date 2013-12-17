@@ -103,11 +103,14 @@ static const string defaultHeader(
         "#include <commandline_utilities>\n"
         "using namespace std;\n"
         "using namespace filesystem;\n"
-        "extern \"C\" int nativescript_main( const arguments &args ) {\n" );
+#if _WIN32
+		"BOOL WINAPI DllMain( HINSTANCE, DWORD, LPVOID ) { return true; }"
+#endif
+        "extern \"C\" __declspec(dllexport) int nativescript_main( const arguments &args ) {\n" );
 
 extern "C"
 {
-    typedef int (*nativescript_main_t)( arguments&& );
+    typedef __declspec(dllimport) int (*nativescript_main_t)( arguments&& );
 }
 
 Config get_config()
@@ -185,14 +188,17 @@ const path get_executable( const Config &config, const path &script, build_type 
 #endif
         command << quote << native( config.compilerCommand() ) << quote << space
                 << config.cxxFlags() << space
+#if _WIN32
+				<< "/D_USRDLL /D_WINDLL "
+#endif
                 << ( ( build == release ) ? config.releaseFlags() : config.debugFlags() ) << space
                 << quote << native( sourcePath ) << quote << space
                 << config.includeDirectories() << space
                 << detected::include_dir << quote << native( config.baseDirectory() / "include" ) << quote << space
                 << config.libraries() << space
                 << detected::library_cmd << "commandline_utilities" << detected::library_postfix << space
-                << detected::output_cmd << quote << native( exePath ) << quote << space << "-shared" << space
                 << detected::linker_prefix
+                << detected::output_cmd << quote << native( exePath ) << quote << space // << "-shared" << space
                 << config.linkDirectories() << space
                 << detected::library_dir << quote << native( config.baseDirectory() / "lib" ) << quote;
 //                << " > " << quote << native( exePath ) << ".log" << quote << " 2>&1";
@@ -220,16 +226,25 @@ void handle_script( const arguments &args )
 
     const path exePath = get_executable( config, script );
 
+#if _WIN32
+	HMODULE handle = LoadLibraryA( exePath.c_str() );
+#else
     void *handle = dlopen( exePath.c_str(), RTLD_LAZY );
+#endif
 
     if ( !handle )
     {
-        throw logic_error( "could not load script: \"" + exePath.string() + "\"" );
+		throw logic_error( "could not load script: \"" + exePath.string() + "\" " + to_string( GetLastError() ) );
     }
 
     nativescript_main_t nativescript_main;
-
+	
+#if _WIN32
+	nativescript_main = reinterpret_cast< nativescript_main_t >( GetProcAddress( handle, "nativescript_main" ) );
+#else
     nativescript_main = reinterpret_cast< nativescript_main_t >( dlsym( handle, "nativescript_main" ) );
+#endif
+
     if ( !nativescript_main )
     {
         throw logic_error( "could not call main loop from script: \"" + exePath.string() + "\"" );

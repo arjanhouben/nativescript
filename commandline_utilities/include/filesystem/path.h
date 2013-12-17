@@ -49,13 +49,14 @@ namespace filesystem
 
 			path dirname() const;
 
-			std::string string() const;
+			const std::string& string() const;
 
 		private:
 
 			path( const stringlist &paths, size_t pos );
 
 			std::string path_;
+			mutable std::string cache_;
 			size_t position_;
 	};
 
