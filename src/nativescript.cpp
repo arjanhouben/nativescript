@@ -6,6 +6,7 @@
 #include <process.h>
 #else
 #include <unistd.h>
+#include <dlfcn.h>
 #endif
 #include <map>
 #include <stdexcept>
@@ -102,9 +103,12 @@ static const string defaultHeader(
         "#include <commandline_utilities>\n"
         "using namespace std;\n"
         "using namespace filesystem;\n"
-        "int main( int argc, const char *argv_c_str[] ) {\n"
-        "\tstd::map< int, string > argv;\n"
-        "\tfor ( int i = 0; i < argc; ++i ) argv[ i ] = argv_c_str[ i ];\n" );
+        "extern \"C\" int nativescript_main( const arguments &args ) {\n" );
+
+extern "C"
+{
+    typedef int (*nativescript_main_t)( arguments&& );
+}
 
 Config get_config()
 {
@@ -137,14 +141,14 @@ const path get_executable( const Config &config, const path &script, build_type 
         const path scriptDir = path( script ).dirname();
         make_directory( config.sourceDirectory() / scriptDir );
 
-        ofstream destination( native( sourcePath ).c_str() );
+        ofstream destination( native( sourcePath ) );
 
         if ( !destination )
         {
             throw logic_error( "could not write source file \"" + sourcePath.string() + "\"" );
         }
 
-        ifstream scriptsource( native( script ).c_str() );
+        ifstream scriptsource( native( script ) );
         string line;
         getline( scriptsource, line );
         if ( line.substr( 0, 2 ) != "#!" )
@@ -152,7 +156,7 @@ const path get_executable( const Config &config, const path &script, build_type 
             throw logic_error( "hashbang not found!" );
         }
 
-        ifstream header( native( config.header() ).c_str() );
+        ifstream header( native( config.header() ) );
         if ( header )
         {
             destination << header.rdbuf();
@@ -167,7 +171,7 @@ const path get_executable( const Config &config, const path &script, build_type 
             destination << line << endl;
         }
 
-        destination << "}";
+        destination << "return 0; }";
 
         destination.close();
 
@@ -177,7 +181,7 @@ const path get_executable( const Config &config, const path &script, build_type 
 
         stringstream command;
 #if _WIN32
-		command << quote;
+        command << quote;
 #endif
         command << quote << native( config.compilerCommand() ) << quote << space
                 << config.cxxFlags() << space
@@ -187,20 +191,20 @@ const path get_executable( const Config &config, const path &script, build_type 
                 << detected::include_dir << quote << native( config.baseDirectory() / "include" ) << quote << space
                 << config.libraries() << space
                 << detected::library_cmd << "commandline_utilities" << detected::library_postfix << space
-                << detected::output_cmd << quote << native( exePath ) << quote << space
+                << detected::output_cmd << quote << native( exePath ) << quote << space << "-shared" << space
                 << detected::linker_prefix
                 << config.linkDirectories() << space
                 << detected::library_dir << quote << native( config.baseDirectory() / "lib" ) << quote;
 //                << " > " << quote << native( exePath ) << ".log" << quote << " 2>&1";
 #if _WIN32
-		command << quote;
+        command << quote;
 #endif
 
-		cout << command.str() << endl;
-//        if ( system( ( quote + command.str() + quote ).c_str() ) )
-        if ( system( ( command.str() ).c_str() ) )
+        cout << command.str() << endl;
+//        if ( system( ( quote + command.str() + quote ) ) )
+        if ( system( ( command.str() ) ) )
         {
-            ifstream errorFile( native( exePath + ".log" ).c_str() );
+            ifstream errorFile( native( exePath + ".log" ) );
             throw logic_error( "problem compiling script\n" + string( istream_iterator< char >( errorFile ), istream_iterator< char >() ) );
         }
     }
@@ -216,29 +220,22 @@ void handle_script( const arguments &args )
 
     const path exePath = get_executable( config, script );
 
-    auto skip = 1;
-    vector< vector< char > > argv_string;
-    vector< char* > argv;
-    for ( auto i : args )
+    void *handle = dlopen( exePath.c_str(), RTLD_LAZY );
+
+    if ( !handle )
     {
-        if ( skip )
-        {
-            --skip;
-            continue;
-        }
-        argv_string.push_back( vector< char >( i.begin(), i.end() ) );
-        argv_string.back().push_back( 0 );
-        argv.push_back( argv_string.back().data() );
+        throw logic_error( "could not load script: \"" + exePath.string() + "\"" );
     }
-    argv.push_back( 0 );
 
-#if _WIN32
-    auto call_exec = _execv;
-#else
-    auto call_exec = execv;
-#endif
+    nativescript_main_t nativescript_main;
 
-    call_exec( native( exePath ).c_str(), argv.data() );
+    nativescript_main = reinterpret_cast< nativescript_main_t >( dlsym( handle, "nativescript_main" ) );
+    if ( !nativescript_main )
+    {
+        throw logic_error( "could not call main loop from script: \"" + exePath.string() + "\"" );
+    }
+
+    exit( nativescript_main( args.skip( 1 ) ) );
 }
 
 void debug_script( const arguments &args )
@@ -264,8 +261,8 @@ void debug_script( const arguments &args )
     stream.close();
 
     // for some reason, lldb won't start in execv
-    exit( system( ( config.debugCommand() + " -s " + debug_script ).c_str() ) );
-//	execv( config.debugCommand().c_str(), argv + 1 );
+    exit( system( ( config.debugCommand() + " -s " + debug_script ) ) );
+//	execv( config.debugCommand(), argv + 1 );
 }
 
 void print_usage( const arguments & )
@@ -302,7 +299,7 @@ int main( int argc, char *argv[] )
 {
     try
     {
-        arguments args( argc, argv );
+        arguments args( argv, argv + argc );
 
         if ( argc < 2 )
         {

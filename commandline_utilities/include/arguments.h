@@ -5,27 +5,36 @@
 
 class arguments
 {
-	public:
+    public:
 
-		typedef std::vector< std::string > value_type;
-		typedef value_type::iterator iterator;
-		typedef value_type::const_iterator const_iterator;
+        typedef std::string value_type;
+        typedef std::vector< value_type > data_type;
+        typedef data_type::iterator iterator;
+        typedef data_type::const_iterator const_iterator;
 
-		arguments( int argc, char *argv[] );
+        arguments();
 
-		const std::string operator[]( size_t idx ) const;
+        template < class T >
+        arguments( T start, T end ) :
+            arguments_( start, end ) { }
 
-		size_t size() const;
-		
-		iterator begin();
+        const std::string operator[]( size_t idx ) const;
 
-		const_iterator begin() const;
-		
-		iterator end();
+        size_t size() const;
 
-		const_iterator end() const;
+        iterator begin();
 
-	private:
+        const_iterator begin() const;
 
-		std::vector< std::string > arguments_;
+        iterator end();
+
+        const_iterator end() const;
+
+        arguments skip( int offset ) const;
+
+    private:
+
+        std::vector< std::string > arguments_;
 };
+
+std::ostream& operator << ( std::ostream &stream, const arguments &args );

@@ -4,28 +4,9 @@
 #include <string>
 #include <iostream>
 
+class arguments;
+
 typedef std::vector< std::string > stringlist;
-
-#if 0
-template < typename InputIterator, typename Seperator = std::string, typename Prefix = std::string, typename Postfix = std::string >
-std::string join( InputIterator start, InputIterator end, Seperator seperator = Seperator(), Prefix prefix = Prefix(), Postfix postix = Postfix() )
-{
-    std::string result;
-    while ( start != end )
-    {
-        if ( !result.empty() ) result += seperator;
-        result += prefix + *start + postix;
-        ++start;
-    }
-    return result;
-}
-
-template < typename Input, typename Seperator = std::string, typename Prefix = std::string, typename Postfix = std::string >
-std::string join( Input input, Seperator seperator = Seperator(), Prefix prefix = Prefix(), Postfix postix = Postfix() )
-{
-    return join( input.begin(), input.end(), seperator, prefix, postix );
-}
-#endif
 
 template < class T >
 stringlist split( const T &t, const std::string &separator = " ", bool keepSeparator = false )
@@ -56,14 +37,14 @@ struct Output
     Output() { }
 } static const out;
 
-template < class T >
+template < typename T >
 OutputHelper&& operator << ( const Output&, const T &t )
 {
     std::cout << t;
     return std::move( OutputHelper() );
 }
 
-template < class T >
+template < typename T >
 const OutputHelper& operator << ( const OutputHelper &helper, const T &t )
 {
     std::cout << t;
@@ -75,3 +56,9 @@ std::string get_env( const std::string &key );
 std::string get_homedir();
 
 void trim( std::string &s );
+
+double to_number( const std::string &str );
+
+int system( const std::string &path );
+
+int system( const std::string &path, const arguments &args );

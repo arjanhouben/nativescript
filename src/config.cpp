@@ -121,14 +121,14 @@ Config Config::readConfigFile( const path &configPath )
 {
     Config config;
 
-    ifstream configFile( configPath.c_str() );
+    ifstream configFile( configPath.string() );
     if ( !configFile )
     {
         const path sample( configPath + ".sample" );
         if ( !exists( sample ) )
         {
             make_directory( sample.dirname() );
-            ofstream defaultFile( sample.c_str() );
+            ofstream defaultFile( sample.string() );
             writeDefault( defaultFile );
         }
     }
