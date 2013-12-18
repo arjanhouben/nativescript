@@ -9,209 +9,214 @@ using namespace std;
 
 namespace filesystem
 {
-	const string slash( "/" ), dot( "." );
+    const string slash( "/" ), dot( "." );
 
-	string cleanup( string list )
-	{
-		replace( list.begin(), list.end(), '\\', '/' );
+    string cleanup( string list )
+    {
+        replace( list.begin(), list.end(), '\\', '/' );
 
-		string::size_type p = list.find( "//" );
-		while ( p != string::npos )
-		{
-			list.erase( p, 1 );
-			p = list.find( "//", p );
-		}
+        string::size_type p = list.find( "//" );
+        while ( p != string::npos )
+        {
+            list.erase( p, 1 );
+            p = list.find( "//", p );
+        }
 
-		p = list.find( "./" );
-		while ( p != string::npos )
-		{
-			if ( !p || list[ p - 1 ] != '.' )
-			{
-				list.erase( p, 2 );
-			}
-			else
-			{
-				++p;
-			}
-			p = list.find( "./", p );
-		}
+        p = list.find( "./" );
+        while ( p != string::npos )
+        {
+            if ( !p || list[ p - 1 ] != '.' )
+            {
+                list.erase( p, 2 );
+            }
+            else
+            {
+                ++p;
+            }
+            p = list.find( "./", p );
+        }
 
-		p = list.find( "/.." );
-		while ( p != string::npos )
-		{
-			if ( p )
-			{
-				string::size_type before = list.rfind( '/', p - 1 );
-				if ( before == string::npos ) break;
-				list.erase( before, p - before + 3 );
-			}
-			else
-			{
-				list.erase( 1, 3 );
-			}
-			p = list.find( "/.." );
-		}
+        p = list.find( "/.." );
+        while ( p != string::npos )
+        {
+            if ( p )
+            {
+                string::size_type before = list.rfind( '/', p - 1 );
+                if ( before == string::npos ) break;
+                list.erase( before, p - before + 3 );
+            }
+            else
+            {
+                list.erase( 1, 3 );
+            }
+            p = list.find( "/.." );
+        }
 
-		return list;
-	}
+        return list;
+    }
 
-	path::path( const std::string &path ) :
-		path_( cleanup( native( path ) ) ),
-		position_( path_.size() )
-	{
-	}
+    path::path( const std::string &path ) :
+        path_( cleanup( native( path ) ) ),
+        position_( path_.size() )
+    {
+    }
 
-	const char *path::c_str() const
-	{
-		return string().c_str();
-	}
+    const char *path::c_str() const
+    {
+        return string().c_str();
+    }
 
-	path path::begin() const
-	{
-		path p( *this );
-		p.position_ = p.path_.find( '/', 1 );
-		if ( p.position_ == string::npos ) p.position_ = path_.size();
-		return p;
-	}
+    path path::begin() const
+    {
+        path p( *this );
+        p.position_ = p.path_.find( '/', 1 );
+        if ( p.position_ == string::npos ) p.position_ = path_.size();
+        return p;
+    }
 
-	path path::end() const
-	{
-		path p( *this );
-		p.position_ = string::npos;
-		return p;
-	}
+    path path::end() const
+    {
+        path p( *this );
+        p.position_ = string::npos;
+        return p;
+    }
 
-	bool path::operator != ( const path &path ) const
-	{
-		return !( *this == path );
-	}
+    bool path::operator != ( const path &path ) const
+    {
+        return !( *this == path );
+    }
 
-	bool path::operator !=( const char *str ) const
-	{
-		return !( *this == str );
-	}
+    bool path::operator !=( const char *str ) const
+    {
+        return !( *this == str );
+    }
 
-	bool path::operator != ( char c ) const
-	{
-		return !( *this == c );
-	}
+    bool path::operator != ( char c ) const
+    {
+        return !( *this == c );
+    }
 
-	bool path::operator == ( const path &path ) const
-	{
-		return position_ == path.position_ && path_ == path.path_;
-	}
+    bool path::operator == ( const path &path ) const
+    {
+        return position_ == path.position_ && path_ == path.path_;
+    }
 
-	bool path::operator ==( const char *str ) const
-	{
-		return string() == str;
-	}
+    bool path::operator ==( const char *str ) const
+    {
+        return string() == str;
+    }
 
-	bool path::operator == ( char c ) const
-	{
-		return path_.size() == 1 && path_[ 0 ] == c;
-	}
+    bool path::operator == ( char c ) const
+    {
+        return path_.size() == 1 && path_[ 0 ] == c;
+    }
 
-	path& path::operator /= ( const path &p )
-	{
-		std::string pathString( p.string() );
+    path& path::operator /= ( const path &p )
+    {
+        std::string pathString( p.string() );
 #if _WIN32
-		auto rem = remove( pathString.begin(), pathString.end(), ':' );
-		if ( rem != pathString.end() )
-		{
-			pathString.erase( rem, pathString.end() );
-		}
+        auto rem = remove( pathString.begin(), pathString.end(), ':' );
+        if ( rem != pathString.end() )
+        {
+            pathString.erase( rem, pathString.end() );
+        }
 #endif
-		path_ = cleanup( native( path_ + '/' +  pathString ) );
-		position_ = path_.size();
-		return *this;
-	}
+        path_ = cleanup( native( path_ + '/' +  pathString ) );
+        position_ = path_.size();
+        return *this;
+    }
 
-	path path::operator / ( const path &p ) const
-	{
-		path result( *this );
-		return result /= p;
-	}
+    path path::operator / ( const path &p ) const
+    {
+        path result( *this );
+        return result /= p;
+    }
 
-	path path::operator / ( const char *str ) const
-	{
-		return *this / path( str );
-	}
+    path path::operator / ( const char *str ) const
+    {
+        return *this / path( str );
+    }
 
-	path& path::operator += ( const std::string &str )
-	{
-		path_.append( str );
-		position_ = path_.size();
-		return *this;
-	}
+    path& path::operator += ( const std::string &str )
+    {
+        path_.append( str );
+        position_ = path_.size();
+        return *this;
+    }
 
-	path& path::operator++()
-	{
-		if ( position_ == path_.size() )
-		{
-			// jump to end
-			position_ = string::npos;
-		}
-		else
-		{
-			position_ = path_.find( '/', position_ + 1 );
-			if ( position_ == string::npos ) position_ = path_.size();
-		}
-		return *this;
-	}
+    path& path::operator++()
+    {
+        if ( position_ == path_.size() )
+        {
+            // jump to end
+            position_ = string::npos;
+        }
+        else
+        {
+            position_ = path_.find( '/', position_ + 1 );
+            if ( position_ == string::npos ) position_ = path_.size();
+        }
+        return *this;
+    }
 
-	std::string path::operator*() const
-	{
-		return string();
-	}
+    std::string path::operator*() const
+    {
+        return string();
+    }
 
-	bool path::empty() const
-	{
-		return path_.empty();
-	}
+    bool path::empty() const
+    {
+        return path_.empty();
+    }
 
-	path path::dirname() const
-	{
-		string::size_type p = path_.rfind( '/' );
-		if ( p == string::npos ) return path( "." );
-		return path_.substr( 0, p );
-	}
+    path path::dirname() const
+    {
+        string::size_type p = path_.rfind( '/' );
+        if ( p == string::npos ) return path( "." );
+        return path_.substr( 0, p );
+    }
 
-	const std::string& path::string() const
-	{
-		cache_ = native( path_.substr( 0, position_ ) );
-		return cache_;
-	}
+    const std::string& path::string() const
+    {
+        cache_ = native( path_.substr( 0, position_ ) );
+        return cache_;
+    }
 
-	path operator + ( const path &p, const string &str )
-	{
-		path result( p );
-		return result += str;
-	}
+    string path::extension() const
+    {
+        string::size_type pos = string().find_last_of( '.' );
+        if ( pos == string::npos ) return string();
+        return string().substr( pos );
+    }
 
-	std::ostream& operator << ( std::ostream &stream, const filesystem::path &p )
-	{
-		return stream << p.string();
-	}
-	
-	std::string native( const path &p )
-	{
+    string path::basename() const
+    {
+        string::size_type pos = string().find_last_of( '/' );
+        if ( pos == string::npos ) return string();
+        return string().substr( pos );
+    }
+
+    path operator + ( const path &p, const string &str )
+    {
+        path result( p );
+        return result += str;
+    }
+
+    std::ostream& operator << ( std::ostream &stream, const filesystem::path &p )
+    {
+        return stream << p.string();
+    }
+
+    std::string native( const std::string &path )
+    {
 #if _WIN32
-		return native( p.string() );
+        std::string result( path );
+        replace( result.begin(), result.end(), '/', '\\' );
+        return result;
 #else
-		return p.string();
+        std::string result( path );
+        replace( result.begin(), result.end(), '\\', '/' );
+        return result;
 #endif
-	}
-	
-	std::string native( const std::string &path )
-	{
-#if _WIN32
-		std::string result( path );
-		replace( result.begin(), result.end(), '/', '\\' );
-		return result;
-#else
-		std::string result( path );
-		replace( result.begin(), result.end(), '\\', '/' );
-		return result;
-#endif
-	}
+    }
 }

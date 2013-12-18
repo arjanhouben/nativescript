@@ -92,9 +92,9 @@ namespace filesystem
         return *this;
     }
 
-    directory::iterator& directory::iterator::operator*()
+    path directory::iterator::operator*()
     {
-        return *this;
+        return string();
     }
 
     directory::iterator directory::iterator::operator++()
@@ -144,8 +144,8 @@ namespace filesystem
 #endif
     }
 
-    directory::directory( const string &path, options types ) :
-        path_( path ),
+    directory::directory(const filesystem::path &p, options types ) :
+        path_( p ),
         types_( types )
     {
     }

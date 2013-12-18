@@ -9,7 +9,7 @@
 #include <fstream>
 #include <stdexcept>
 #include <cassert>
-
+#include <array>
 #include <iostream>
 
 using namespace std;
@@ -17,11 +17,11 @@ using namespace filesystem;
 
 namespace filesystem
 {
-	
+
     bool is_executable( const path &filename )
     {
 #if _WIN32
-		return ( GetFileAttributes( native( filename ).c_str() ) & FILE_EXECUTE ) != 0;
+        return ( GetFileAttributes( filename.c_str() ) & FILE_EXECUTE ) != 0;
 #else
         return ( access( filename.c_str(), X_OK ) == -1 );
 #endif
@@ -30,18 +30,18 @@ namespace filesystem
     bool is_directory( const path &filename )
     {
 #if _WIN32
-		return ( GetFileAttributes( native( filename ).c_str() ) & FILE_ATTRIBUTE_DIRECTORY ) != 0;
+        return ( GetFileAttributes( filename.c_str() ) & FILE_ATTRIBUTE_DIRECTORY ) != 0;
 #else
-		struct stat info;
-		if ( stat( filename.c_str(), &info ) ) return 0;
-		return info.st_mode & S_IFDIR;
+        struct stat info;
+        if ( stat( filename.c_str(), &info ) ) return 0;
+        return info.st_mode & S_IFDIR;
 #endif
     }
 
     double modification_date( const path &filename )
     {
 #if _WIN32
-        HANDLE file = CreateFile( native( filename ).c_str(), GENERIC_READ,
+        HANDLE file = CreateFile( filename.c_str(), GENERIC_READ,
             FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
             0,
             OPEN_EXISTING,
@@ -51,7 +51,7 @@ namespace filesystem
         FILETIME modified = { 0 };
         GetFileTime( file, 0, 0, &modified );
         CloseHandle( file );
-		return static_cast< double >( *reinterpret_cast< PULONG64 >( &modified ) );
+        return static_cast< double >( *reinterpret_cast< PULONG64 >( &modified ) );
 #else
         struct stat info = { 0 };
         stat( filename.c_str(), &info );
@@ -66,7 +66,7 @@ namespace filesystem
     bool exists( const path &path )
     {
 #if _WIN32
-        return GetFileAttributes( native( path ).c_str() ) != INVALID_FILE_ATTRIBUTES;
+        return GetFileAttributes( path.c_str() ) != INVALID_FILE_ATTRIBUTES;
 #else
         struct stat attributes;
         return !stat( path.c_str(), &attributes );
@@ -80,7 +80,7 @@ namespace filesystem
         for ( auto i : path )
         {
 #if _WIN32
-            if ( CreateDirectory( native( i ).c_str(), 0 ) && GetLastError() != ERROR_ALREADY_EXISTS )
+            if ( CreateDirectory( i.c_str(), 0 ) && GetLastError() != ERROR_ALREADY_EXISTS )
 #else
             if ( mkdir( i.c_str(), S_IRWXU ) && errno != EEXIST )
 #endif
@@ -123,4 +123,62 @@ namespace filesystem
         if ( is_absolute( p ) ) return p;
         return prefix / p;
     }
+
+    void rename( const path &from, const path &to )
+    {
+        if ( std::rename( from.c_str(), to.c_str() ) != 0 )
+        {
+            throw logic_error( "could not rename \"" + from.string() + "\" to \"" + to.string() + "\"" );
+        }
+    }
+
+    void remove( const path &file )
+    {
+        if ( std::remove( file.c_str() ) != 0 )
+        {
+            throw logic_error( "could not remove \"" + file.string() + "\"" );
+        }
+    }
+
+    template < typename Buffer >
+    void copy( const path &source, const path &dest, Buffer &buffer )
+    {
+        if ( is_directory( source ) )
+        {
+            make_directory( dest );
+
+            for ( auto f : directory( source ) )
+            {
+                copy( source / f, dest / f.basename(), buffer );
+            }
+        }
+        else
+        {
+            ifstream src( source.string(), ios::binary );
+            if ( !src )
+            {
+                throw logic_error( "could not read \"" + source.string() + "\" when trying to copy it to \"" + dest.string() + "\"" );
+            }
+            ofstream dst( dest.string(), ios::binary );
+            if ( !dst )
+            {
+                throw logic_error( "could not write \"" + dest.string() + "\" when trying to copy it from \"" + source.string() + "\"" );
+            }
+
+            const auto buffer_size = buffer.size() * sizeof( typename Buffer::value_type );
+
+            while ( src )
+            {
+                src.read( reinterpret_cast< char* >( buffer.data() ), buffer_size );
+                dst.write( reinterpret_cast< const char* >( buffer.data() ), src.gcount() );
+            }
+        }
+    }
+
+    void copy( const path &source, const path &dest )
+    {
+        array< size_t, 1024 > buffer;
+        copy( source, dest, buffer );
+    }
+
 }

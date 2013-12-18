@@ -54,7 +54,7 @@ void trim( string &s )
 }
 
 
-double to_number(const string &str)
+double to_number( const string &str )
 {
     stringstream stream( str );
     double result = 0;

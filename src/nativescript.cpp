@@ -2,22 +2,27 @@
 #include <string>
 #include <fstream>
 #include <iostream>
+#include <map>
+#include <stdexcept>
+#include <functional>
+#include <algorithm>
 #ifdef _WIN32
 #include <process.h>
 #else
 #include <unistd.h>
 #include <dlfcn.h>
 #endif
-#include <map>
-#include <stdexcept>
-#include <functional>
-#include <algorithm>
 
-#include <generic.h>
 #include <config.h>
-#include <filesystem.h>
-#include <arguments.h>
 #include <defines.h>
+
+#include <commandline_utilities>
+
+#if _WIN32
+#define DLLIMPORT __declspec(dllimport)
+#else
+#define DLLIMPORT
+#endif
 
 using namespace std;
 using namespace filesystem;
@@ -104,13 +109,27 @@ static const string defaultHeader(
         "using namespace std;\n"
         "using namespace filesystem;\n"
 #if _WIN32
-		"BOOL WINAPI DllMain( HINSTANCE, DWORD, LPVOID ) { return true; }"
-#endif
+        "BOOL WINAPI DllMain( HINSTANCE, DWORD, LPVOID ) { return true; }"
         "extern \"C\" __declspec(dllexport) int nativescript_main( const arguments &args ) {\n" );
+#else
+        "extern \"C\" int nativescript_main( const arguments &args ) {\n" );
+#endif
 
 extern "C"
 {
-    typedef __declspec(dllimport) int (*nativescript_main_t)( arguments&& );
+    typedef DLLIMPORT int (*nativescript_main_t)( arguments&& );
+}
+
+path get_script_from_args( const string &arg )
+{
+    path script( absolute( path( arg ), cwd() ) );
+
+    if ( script.extension() != ".nts" )
+    {
+        throw logic_error( "nativescript extension needs to be .nts" );
+    }
+
+    return move( script );
 }
 
 Config get_config()
@@ -118,7 +137,7 @@ Config get_config()
     return Config( Config::readConfigFile( path( get_homedir() ) / ".nativescript" / "config" ) );
 }
 
-path executable_path( const Config &config, const path &script, build_type build = release )
+path library_path( const Config &config, const path &script, build_type build = release )
 {
     path exe = config.buildDirectory() / script;
     if ( build == debug )
@@ -134,24 +153,24 @@ path debug_script_path( const Config &config, const path &script )
     return config.buildDirectory() / script + ".debugger";
 }
 
-const path get_executable( const Config &config, const path &script, build_type build = release )
+const path get_library( const Config &config, const path &script, build_type build = release )
 {
-    const path exePath = executable_path( config, script, build );
+    const path libPath = library_path( config, script, build );
     const path sourcePath = config.sourceDirectory() / script + ".cpp";
 
-    if ( !exists( exePath ) || modification_date( sourcePath ) <= modification_date( path( script ) ) )
+    if ( !exists( libPath ) || modification_date( sourcePath ) <= modification_date( path( script ) ) )
     {
         const path scriptDir = path( script ).dirname();
         make_directory( config.sourceDirectory() / scriptDir );
 
-        ofstream destination( native( sourcePath ) );
+        ofstream destination( sourcePath.string() );
 
         if ( !destination )
         {
             throw logic_error( "could not write source file \"" + sourcePath.string() + "\"" );
         }
 
-        ifstream scriptsource( native( script ) );
+        ifstream scriptsource( script.string() );
         string line;
         getline( scriptsource, line );
         if ( line.substr( 0, 2 ) != "#!" )
@@ -188,34 +207,32 @@ const path get_executable( const Config &config, const path &script, build_type 
 #endif
         command << quote << native( config.compilerCommand() ) << quote << space
                 << config.cxxFlags() << space
-#if _WIN32
-				<< "/D_USRDLL /D_WINDLL "
+#if MSVC
+                << "/D_USRDLL /D_WINDLL "
 #endif
                 << ( ( build == release ) ? config.releaseFlags() : config.debugFlags() ) << space
-                << quote << native( sourcePath ) << quote << space
+                << quote << sourcePath << quote << space
                 << config.includeDirectories() << space
-                << detected::include_dir << quote << native( config.baseDirectory() / "include" ) << quote << space
+                << detected::include_dir << quote << config.baseDirectory() / "include" << quote << space
                 << config.libraries() << space
                 << detected::library_cmd << "commandline_utilities" << detected::library_postfix << space
                 << detected::linker_prefix
-                << detected::output_cmd << quote << native( exePath ) << quote << space // << "-shared" << space
+                << detected::output_cmd << quote << libPath << quote << space
                 << config.linkDirectories() << space
-                << detected::library_dir << quote << native( config.baseDirectory() / "lib" ) << quote;
-//                << " > " << quote << native( exePath ) << ".log" << quote << " 2>&1";
+                << detected::library_dir << quote << config.baseDirectory() / "lib" << quote;
 #if _WIN32
         command << quote;
 #endif
 
-        cout << command.str() << endl;
-//        if ( system( ( quote + command.str() + quote ) ) )
         if ( system( ( command.str() ) ) )
         {
-            ifstream errorFile( native( exePath + ".log" ) );
-            throw logic_error( "problem compiling script\n" + string( istream_iterator< char >( errorFile ), istream_iterator< char >() ) );
+//            ifstream errorFile( native( exePath + ".log" ) );
+//            throw logic_error( "problem compiling script\n" + string( istream_iterator< char >( errorFile ), istream_iterator< char >() ) );
+            throw logic_error( "problem compiling script\n" );
         }
     }
 
-    return exePath;
+    return libPath;
 }
 
 void handle_script( const arguments &args )
@@ -224,23 +241,23 @@ void handle_script( const arguments &args )
 
     Config config( get_config() );
 
-    const path exePath = get_executable( config, script );
+    const path exePath = get_library( config, script );
 
 #if _WIN32
-	HMODULE handle = LoadLibraryA( exePath.c_str() );
+    HMODULE handle = LoadLibraryA( exePath.c_str() );
 #else
     void *handle = dlopen( exePath.c_str(), RTLD_LAZY );
 #endif
 
     if ( !handle )
     {
-		throw logic_error( "could not load script: \"" + exePath.string() + "\" " + to_string( GetLastError() ) );
+        throw logic_error( "could not load script: \"" + exePath.string() + "\"" );
     }
 
     nativescript_main_t nativescript_main;
-	
+
 #if _WIN32
-	nativescript_main = reinterpret_cast< nativescript_main_t >( GetProcAddress( handle, "nativescript_main" ) );
+    nativescript_main = reinterpret_cast< nativescript_main_t >( GetProcAddress( handle, "nativescript_main" ) );
 #else
     nativescript_main = reinterpret_cast< nativescript_main_t >( dlsym( handle, "nativescript_main" ) );
 #endif
@@ -259,7 +276,7 @@ void debug_script( const arguments &args )
 
     Config config( get_config() );
 
-    const string exe( get_executable( config, script, debug ).string() );
+    const string exe( get_library( config, script, debug ).string() );
 
     const string debug_script( debug_script_path( config, script ).string() );
 
@@ -275,9 +292,7 @@ void debug_script( const arguments &args )
 
     stream.close();
 
-    // for some reason, lldb won't start in execv
     exit( system( ( config.debugCommand() + " -s " + debug_script ) ) );
-//	execv( config.debugCommand(), argv + 1 );
 }
 
 void print_usage( const arguments & )
@@ -289,14 +304,14 @@ void show_executable( const arguments &args )
 {
     const path script( absolute( path( args[ 2 ] ), cwd() ) );
     Config config( get_config() );
-    cout << executable_path( config, script ) << endl;
+    cout << library_path( config, script ) << endl;
 }
 
 void show_debug_executable( const arguments &args )
 {
     const path script( absolute( path( args[ 2 ] ), cwd() ) );
     Config config( get_config() );
-    cout << executable_path( config, script, debug ) << endl;
+    cout << library_path( config, script, debug ) << endl;
 }
 
 map< string, action > initialize_argument_handling()

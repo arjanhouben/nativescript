@@ -78,16 +78,17 @@ include_directories(
 )
 
 if( MSVC )
+	add_definitions( -DMSVC )
 	set( DETECTED_INCLUDE_DIR "/I" )
 	set( DETECTED_LIBRARY_DIR "/LIBPATH:" )
 	set( DETECTED_LIBRARY_POSTFIX ".lib" )
 	set( DETECTED_LINK_PREFIX "/link /DLL " )
-	set( DETECTED_OUTPUT_CMD "/Fe" )
 	set( DETECTED_OUTPUT_CMD "/OUT:" )
 else()
 	set( DETECTED_INCLUDE_DIR "-I" )
 	set( DETECTED_LIBRARY_DIR "-L" )
 	set( DETECTED_LIBRARY_CMD "-l " )
+	set( DETECTED_LINK_PREFIX "-shared " )
 	set( DETECTED_OUTPUT_CMD "-o " )
 endif()
 

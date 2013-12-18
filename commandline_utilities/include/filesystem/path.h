@@ -7,64 +7,68 @@ typedef std::vector< std::string > stringlist;
 
 namespace filesystem
 {
-	class path
-	{
-		public:
+    class path
+    {
+        public:
 
-			path( const std::string &path = std::string() );
+            path( const std::string &path = std::string() );
 
-			const char* c_str() const;
+            const char* c_str() const;
 
-			path begin() const;
+            path begin() const;
 
-			path end() const;
+            path end() const;
 
-			bool operator != ( const path& ) const;
+            bool operator != ( const path& ) const;
 
-			bool operator != ( const char *str ) const;
+            bool operator != ( const char *str ) const;
 
-			bool operator != ( char str ) const;
+            bool operator != ( char str ) const;
 
-			bool operator == ( const path& ) const;
+            bool operator == ( const path& ) const;
 
-			bool operator == ( const char *str ) const;
+            bool operator == ( const char *str ) const;
 
-			bool operator == ( char str ) const;
+            bool operator == ( char str ) const;
 
-			path& operator /= ( const path& );
+            path& operator /= ( const path& );
 
-			path operator / ( const path& ) const;
+            path operator / ( const path& ) const;
 
-			path operator / ( const char *str ) const;
+            path operator / ( const char *str ) const;
 
-			path& operator += ( const std::string &str );
+            path& operator += ( const std::string &str );
 
-			path& operator++();
+            path& operator++();
 
-			std::string operator*() const;
+            std::string operator*() const;
 
-			bool empty() const;
+            bool empty() const;
 
-			path back() const;
+            path back() const;
 
-			path dirname() const;
+            path dirname() const;
 
-			const std::string& string() const;
+            const std::string& string() const;
 
-		private:
+            std::string extension() const;
 
-			path( const stringlist &paths, size_t pos );
+            std::string basename() const;
 
-			std::string path_;
-			mutable std::string cache_;
-			size_t position_;
-	};
+        private:
 
-	path operator + ( const path &p, const std::string &str );
+            path( const stringlist &paths, size_t pos );
 
-	std::ostream& operator << ( std::ostream &stream, const path &p );
-	
-	std::string native( const path &p );
-	
-	std::string native( const std::string &path );
+            std::string path_;
+            mutable std::string cache_;
+            size_t position_;
+    };
+
+    path operator + ( const path &p, const std::string &str );
+
+    std::ostream& operator << ( std::ostream &stream, const path &p );
+
+    std::string native( const path &p );
+
+    std::string native( const std::string &path );
 }

@@ -38,7 +38,7 @@ namespace filesystem
 
                     const iterator& operator*() const;
 
-                    iterator& operator*();
+                    path operator*();
 
                     iterator operator++();
 
@@ -63,7 +63,7 @@ namespace filesystem
                     options options_;
             };
 
-            directory( const std::string &path = filesystem::cwd().string(), options types = no_dots );
+            directory( const path &p = filesystem::cwd(), options types = no_dots );
 
             directory( options types );
 
